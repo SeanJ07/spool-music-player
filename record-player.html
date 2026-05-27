@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spiral DJ — Record Player</title>
+<style>
+  :root {
+    --bg: #0a0a14;
+    --wood: #3d2817;
+    --wood-light: #5a3d28;
+    --wood-dark: #2a1a0f;
+    --brass: #c4a35a;
+    --brass-dim: #8b7340;
+    --vinyl: #111;
+    --groove: #1a1a1a;
+    --groove-light: #2a2a2a;
+    --label: #c42828;
+    --label-cream: #f4e4c1;
+    --text: #e8dcc8;
+    --text-dim: #8a7e6b;
+    --cyan: #00d4ff;
+    --cyan-glow: rgba(0,212,255,0.3);
+    --dust-cover: rgba(200,210,220,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: linear-gradient(160deg, #0a0a14 0%, #1a0a0a 30%, #0f0f1f 70%, #0a0a14 100%);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    position: relative;
+  }
+
+  /* Ambient glow */
+  .ambient-glow {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.04) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: ambientPulse 6s ease-in-out infinite;
+  }
+  @keyframes ambientPulse {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  }
+
+  /* Main player container — looks like a turntable */
+  .turntable {
+    position: relative;
+    width: 520px;
+    height: 420px;
+    perspective: 1000px;
+  }
+
+  /* Wooden plinth (base) */
+  .plinth {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 50%, var(--wood) 100%);
+    border-radius: 20px;
+    box-shadow:
+      0 20px 60px rgba(0,0,0,0.6),
+      0 0 0 3px var(--wood-light),
+      0 0 0 6px var(--wood-dark),
+      inset 0 2px 0 rgba(255,255,255,0.05);
+    overflow: hidden;
+  }
+
+  /* Wood grain texture */
+  .plinth::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        2deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.08) 3px,
+        rgba(0,0,0,0.08) 4px
+      ),
+      repeating-linear-gradient(
+        88deg,
+        transparent,
+        transparent 8px,
+        rgba(255,255,255,0.02) 8px,
+        rgba(255,255,255,0.02) 9px
+      );
+    border-radius: 20px;
+    pointer-events: none;
+  }
+
+  /* Dust cover (glass dome effect) */
+  .dust-cover {
+    position: absolute;
+    inset: 8px;
+    border-radius: 18px;
+    background: var(--dust-cover);
+    backdrop-filter: blur(1px);
+    pointer-events: none;
+    z-index: 10;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* Platter area */
+  .platter-zone {
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 260px;
+    height: 260px;
+  }
+
+  /* Vinyl record */
+  .vinyl {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--vinyl);
+    box-shadow:
+      0 0 0 2px var(--groove-light),
+      0 0 0 4px var(--groove),
+      0 0 0 6px var(--groove-light),
+      0 0 0 8px var(--groove),
+      0 0 0 10px var(--groove-light),
+      0 0 0 12px var(--vinyl),
+      0 8px 30px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease;
+  }
+
+  /* Grooves */
+  .vinyl::before {
+    content: '';
+    position: absolute;
+    inset: 15px;
+    border-radius: 50%;
+    background:
+      repeating-radial-gradient(
+        circle at center,
+        transparent 0px,
+        transparent 2px,
+        rgba(40,40,40,0.3) 2px,
+        rgba(40,40,40,0.3) 3px
+      );
+  }
+
+  /* Record label */
+  .record-label {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--label);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--label-cream);
+    z-index: 2;
+    transition: all 0.3s ease;
+  }
+  .record-label .label-text {
+    font-size: 7px;
+    color: var(--label-cream);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.3;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .record-label .label-spindle {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #888;
+    margin-top: 2px;
+  }
+
+  /* Spinning state */
+  .vinyl.spinning {
+    animation: spin 2s linear infinite;
+  }
+  .vinyl.spinning .record-label {
+    animation: spin 2s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Tonearm */
+  .tonearm {
+    position: absolute;
+    right: 40px;
+    top: 60px;
+    width: 180px;
+    height: 200px;
+    z-index: 5;
+  }
+  .tonearm-base {
+    position: absolute;
+    right: 0;
+    top: 20px;
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle at 30% 30%, #666, #333);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+  .tonearm-arm {
+    position: absolute;
+    right: 30px;
+    top: 35px;
+    width: 150px;
+    height: 6px;
+    background: linear-gradient(90deg, var(--brass-dim) 0%, var(--brass) 50%, #999 100%);
+    border-radius: 3px;
+    transform-origin: right center;
+    transform: rotate(25deg);
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .tonearm-head {
+    position: absolute;
+    left: 0;
+    top: -4px;
+    width: 18px;
+    height: 14px;
+    background: #222;
+    border-radius: 3px 3px 1px 1px;
+    border-bottom: 2px solid #555;
+  }
+  .tonearm-arm.playing {
+    transform: rotate(12deg);
+  }
+
+  /* Controls */
+  .controls {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    z-index: 20;
+  }
+  .ctrl-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(196,163,90,0.3);
+    background: rgba(20,15,10,0.6);
+    backdrop-filter: blur(8px);
+    color: var(--brass);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .ctrl-btn:hover {
+    border-color: var(--brass);
+    background: rgba(30,20,15,0.8);
+    box-shadow: 0 0 20px rgba(196,163,90,0.2);
+  }
+  .ctrl-btn.play-btn {
+    width: 60px; height: 60px;
+    font-size: 22px;
+    border-color: var(--brass);
+    background: rgba(196,163,90,0.1);
+  }
+  .ctrl-btn.play-btn:hover {
+    background: rgba(196,163,90,0.2);
+    box-shadow: 0 0 30px rgba(196,163,90,0.3);
+  }
+
+  /* Track info */
+  .track-info {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 20;
+    pointer-events: none;
+  }
+  .track-title {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+  .track-artist {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    font-style: italic;
+  }
+
+  /* Progress ring */
+  .progress-ring {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+  }
+  .progress-ring svg {
+    width: 100px;
+    height: 100px;
+    transform: rotate(-90deg);
+  }
+  .progress-ring circle {
+    fill: none;
+    stroke-width: 2;
+  }
+  .progress-bg {
+    stroke: rgba(196,163,90,0.15);
+  }
+  .progress-fg {
+    stroke: var(--cyan);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s linear;
+    filter: drop-shadow(0 0 4px var(--cyan-glow));
+  }
+  .progress-time {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Volume knob */
+  .volume-knob {
+    position: absolute;
+    right: 55px;
+    bottom: 45px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #555, #222);
+    border: 2px solid #444;
+    cursor: grab;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  }
+  .volume-indicator {
+    width: 3px;
+    height: 14px;
+    background: var(--brass);
+    border-radius: 2px;
+    transform-origin: bottom center;
+    position: absolute;
+    bottom: 50%;
+    transition: transform 0.05s linear;
+  }
+
+  /* File dropper */
+  .dropper {
+    position: absolute;
+    inset: 15px;
+    border-radius: 18px;
+    border: 2px dashed rgba(196,163,90,0.12);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .dropper.active {
+    opacity: 1;
+    background: rgba(0,212,255,0.03);
+  }
+  .dropper-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* Hidden input */
+  #file-input { display: none; }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  .ctrl-btn:hover .tooltip { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="ambient-glow"></div>
+
+<div class="turntable" id="turntable">
+  <div class="plinth"></div>
+
+  <div class="track-info">
+    <div class="track-title" id="track-title">Drop a file to play</div>
+    <div class="track-artist" id="track-artist">Spiral DJ</div>
+  </div>
+
+  <div class="platter-zone">
+    <div class="vinyl" id="vinyl">
+      <div class="record-label" id="record-label">
+        <span class="label-text" id="label-text">SPIRAL<br>DJ SESSION</span>
+        <div class="label-spindle"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tonearm">
+    <div class="tonearm-arm" id="tonearm">
+      <div class="tonearm-head"></div>
+    </div>
+    <div class="tonearm-base"></div>
+  </div>
+
+  <div class="progress-ring">
+    <svg viewBox="0 0 100 100">
+      <circle class="progress-bg" cx="50" cy="50" r="46"></circle>
+      <circle class="progress-fg" id="progress-fg" cx="50" cy="50" r="46"
+        stroke-dasharray="289.03" stroke-dashoffset="289.03"></circle>
+    </svg>
+    <div class="progress-time" id="progress-time">0:00</div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prevTrack()" title="Previous">
+      ⏮<span class="tooltip">Previous</span>
+    </button>
+    <button class="ctrl-btn play-btn" id="play-btn" onclick="togglePlay()" title="Play/Pause">
+      ▶<span class="tooltip">Play</span>
+    </button>
+    <button class="ctrl-btn" onclick="nextTrack()" title="Next">
+      ⏭<span class="tooltip">Next</span>
+    </button>
+  </div>
+
+  <div class="volume-knob" id="volume-knob" title="Volume">
+    <div class="volume-indicator" id="volume-indicator" style="transform: rotate(-120deg)"></div>
+  </div>
+
+  <div class="dropper" id="dropper">
+    <span class="dropper-text">DROP MUSIC HERE</span>
+  </div>
+
+  <input type="file" id="file-input" accept="audio/*" multiple>
+</div>
+
+<script>
+  // === Audio Engine ===
+  const audio = new Audio();
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  let source = null;
+  let isPlaying = false;
+  let tracks = [];
+  let currentIndex = -1;
+  let shuffleMode = false;
+
+  // === DOM refs ===
+  const vinyl = document.getElementById('vinyl');
+  const tonearm = document.getElementById('tonearm');
+  const playBtn = document.getElementById('play-btn');
+  const progressFg = document.getElementById('progress-fg');
+  const progressTime = document.getElementById('progress-time');
+  const trackTitle = document.getElementById('track-title');
+  const trackArtist = document.getElementById('track-artist');
+  const labelText = document.getElementById('label-text');
+  const fileInput = document.getElementById('file-input');
+  const dropper = document.getElementById('dropper');
+
+  const circumference = 2 * Math.PI * 46; // ~289.03
+
+  // === File handling ===
+  // Auto-load from Spool Music folder (injected by launcher or file picker)
+  async function scanSpoolFolder() {
+    try {
+      // Try File System Access API (Chrome/Edge) to pick the Spool Music folder
+      if ('showDirectoryPicker' in window) {
+        const dirHandle = await window.showDirectoryPicker({
+          mode: 'readonly',
+          startIn: 'desktop',
+        });
+        const audioExts = ['.mp3', '.wav', '.flac', '.ogg', '.m4a', '.aac', '.wma', '.opus'];
+        for await (const entry of dirHandle.values()) {
+          if (entry.kind === 'file') {
+            const ext = '.' + entry.name.split('.').pop().toLowerCase();
+            if (audioExts.includes(ext)) {
+              const file = await entry.getFile();
+              const url = URL.createObjectURL(file);
+              tracks.push({
+                name: entry.name.replace(/\.[^.]+$/, ''),
+                artist: 'Spool Music',
+                url: url,
+                file: file
+              });
+            }
+          }
+        }
+        return tracks.length;
+      }
+    } catch (e) {
+      // User cancelled or API not supported
+      console.log('[Spool] Folder picker cancelled or not supported');
+    }
+    return 0;
+  }
+
+  // Handle files picked from any source
+  function loadFiles(files) {
+    let newCount = 0;
+    for (const file of files) {
+      if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|flac|ogg|m4a|aac|wma|opus)$/i)) {
+        const url = URL.createObjectURL(file);
+        tracks.push({
+          name: file.name.replace(/\.[^.]+$/, ''),
+          artist: 'Spool Music',
+          url: url,
+          file: file
+        });
+        newCount++;
+      }
+    }
+    if (tracks.length > 0 && currentIndex === -1) {
+      currentIndex = 0;
+      loadTrack(0);
+    }
+    if (newCount > 0) {
+      trackArtist.textContent = tracks.length + ' tracks in Spool Music';
+    }
+  }
+
+  function loadTrack(index) {
+    if (index < 0 || index >= tracks.length) return;
+    currentIndex = index;
+    const track = tracks[index];
+
+    audio.src = track.url;
+    audio.load();
+
+    trackTitle.textContent = track.name;
+    trackArtist.textContent = track.artist;
+    labelText.innerHTML = track.name.substring(0, 20) + '<br>SPIRAL DJ';
+
+    progressFg.style.strokeDashoffset = circumference;
+    progressTime.textContent = '0:00';
+
+    // Reset vinyl
+    vinyl.classList.remove('spinning');
+    tonearm.classList.remove('playing');
+    playBtn.innerHTML = '▶<span class="tooltip">Play</span>';
+    isPlaying = false;
+  }
+
+  function togglePlay() {
+    if (tracks.length === 0) {
+      fileInput.click();
+      return;
+    }
+
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    if (isPlaying) {
+      audio.pause();
+      vinyl.classList.remove('spinning');
+      tonearm.classList.remove('playing');
+      playBtn.innerHTML = '▶<span class="tooltip">Play</span>';
+      isPlaying = false;
+    } else {
+      audio.play().catch(e => console.error('Playback failed:', e));
+      vinyl.classList.add('spinning');
+      tonearm.classList.add('playing');
+      playBtn.innerHTML = '⏸<span class="tooltip">Pause</span>';
+      isPlaying = true;
+    }
+  }
+
+  function prevTrack() {
+    if (tracks.length === 0) return;
+    const idx = shuffleMode
+      ? Math.floor(Math.random() * tracks.length)
+      : (currentIndex - 1 + tracks.length) % tracks.length;
+    loadTrack(idx);
+    if (isPlaying) {
+      audio.play().catch(() => {});
+      vinyl.classList.add('spinning');
+      tonearm.classList.add('playing');
+    }
+  }
+
+  function nextTrack() {
+    if (tracks.length === 0) return;
+    const idx = shuffleMode
+      ? Math.floor(Math.random() * tracks.length)
+      : (currentIndex + 1) % tracks.length;
+    loadTrack(idx);
+    if (isPlaying) {
+      audio.play().catch(() => {});
+      vinyl.classList.add('spinning');
+      tonearm.classList.add('playing');
+    }
+  }
+
+  // === Progress ===
+  audio.addEventListener('timeupdate', () => {
+    if (!audio.duration) return;
+    const progress = audio.currentTime / audio.duration;
+    progressFg.style.strokeDashoffset = circumference * (1 - progress);
+
+    const m = Math.floor(audio.currentTime / 60);
+    const s = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
+    progressTime.textContent = `${m}:${s}`;
+  });
+
+  audio.addEventListener('ended', nextTrack);
+
+  // === Volume knob ===
+  const volumeKnob = document.getElementById('volume-knob');
+  const volumeIndicator = document.getElementById('volume-indicator');
+  let volumeAngle = 0.7; // 0 to 1
+
+  function updateVolume(angle) {
+    volumeAngle = Math.max(0, Math.min(1, angle));
+    audio.volume = volumeAngle;
+    volumeIndicator.style.transform = `rotate(${-120 + volumeAngle * 240}deg)`;
+  }
+
+  let isDragging = false;
+  volumeKnob.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const rect = volumeKnob.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const angle = Math.atan2(e.clientX - centerX, -(e.clientY - centerY));
+    const normalized = (angle + Math.PI) / (2 * Math.PI);
+    updateVolume(normalized);
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; });
+  volumeKnob.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    updateVolume(volumeAngle - e.deltaY * 0.001);
+  });
+
+  // === Drag and drop ===
+  document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropper.classList.add('active');
+  });
+  document.addEventListener('dragleave', () => {
+    dropper.classList.remove('active');
+  });
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropper.classList.remove('active');
+    if (e.dataTransfer.files.length > 0) {
+      loadFiles(e.dataTransfer.files);
+    }
+  });
+
+  // Click to add files
+  document.getElementById('turntable').addEventListener('dblclick', () => {
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      loadFiles(fileInput.files);
+    }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      togglePlay();
+    } else if (e.code === 'ArrowRight') {
+      nextTrack();
+    } else if (e.code === 'ArrowLeft') {
+      prevTrack();
+    }
+  });
+
+  // Init
+  updateVolume(0.7);
+  trackTitle.textContent = 'Spool Music Player';
+  trackArtist.textContent = document.querySelector('.dropper-text') ? 'Click folder to scan | or drag files' : 'Drag files or click to load';
+
+  // Add folder picker button to controls
+  (function addFolderBtn() {
+    const controls = document.querySelector('.controls');
+    const btn = document.createElement('button');
+    btn.className = 'ctrl-btn';
+    btn.title = 'Scan Spool Music folder';
+    btn.innerHTML = '📁<span class="tooltip">Scan Folder</span>';
+    btn.addEventListener('click', async () => {
+      const count = await scanSpoolFolder();
+      if (count === 0) {
+        fileInput.click();
+      } else {
+        trackTitle.textContent = count + ' tracks loaded';
+        trackArtist.textContent = 'Spool Music folder';
+        if (currentIndex === -1 && tracks.length > 0) {
+          currentIndex = 0;
+          loadTrack(0);
+        }
+      }
+    });
+    controls.appendChild(btn);
+  })();
+</script>
+</body>
+</html>

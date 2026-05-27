@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>◈ Spool</title>
+<style>
+  :root {
+    --bg: #0a0a14; --surface: #141428; --wood: #3d2817;
+    --wood-dark: #2a1a0f; --brass: #c4a35a; --vinyl: #111;
+    --text: #e8dcc8; --text-dim: #8a7e6b; --green: #2dd4bf;
+    --cyan: #00d4ff; --crimson: #e04343;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: linear-gradient(160deg, #0a0a14, #1a0a0a 30%, #0f0f1f 70%, #0a0a14);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh; display: flex; overflow: hidden; user-select: none;
+  }
+
+  /* === Left: Library === */
+  .library {
+    width: 300px; background: var(--surface);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .lib-header {
+    padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .lib-title {
+    font-size: 14px; font-weight: 600; color: var(--green);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .lib-count { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+
+  /* View toggle */
+  .view-toggle {
+    display: flex; gap: 4px; margin-top: 10px;
+  }
+  .view-btn {
+    flex: 1; padding: 6px 10px; font-size: 10px; border: 1px solid rgba(196,163,90,0.2);
+    background: transparent; color: var(--text-dim); border-radius: 4px;
+    cursor: pointer; transition: 0.15s; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .view-btn.active {
+    background: rgba(196,163,90,0.15); color: var(--brass); border-color: var(--brass);
+  }
+  .view-btn:hover:not(.active) { background: rgba(196,163,90,0.08); }
+
+  .folder-status {
+    padding: 8px 14px; font-size: 10px; color: var(--text-dim);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .folder-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .folder-dot.watching { background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .track-list { flex: 1; overflow-y: auto; }
+  .track-list::-webkit-scrollbar { width: 4px; }
+  .track-list::-webkit-scrollbar-track { background: transparent; }
+  .track-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+  .track-item {
+    padding: 9px 14px; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    display: flex; gap: 8px; align-items: center; transition: 0.12s;
+  }
+  .track-item:hover { background: rgba(45,212,191,0.04); }
+  .track-item.playing {
+    background: rgba(45,212,191,0.08);
+    border-left: 3px solid var(--green);
+    padding-left: 11px;
+  }
+  .track-num { color: var(--text-dim); font-size: 10px; width: 18px; text-align: right; flex-shrink: 0; }
+  .track-info { flex: 1; min-width: 0; }
+  .track-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-artist { font-size: 10px; color: var(--text-dim); }
+  .track-len { font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+
+  /* === Right: Player === */
+  .player {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  /* === Turntable View === */
+  .turntable {
+    position: relative; width: 380px; height: 360px;
+    margin-bottom: 20px;
+  }
+  .plinth {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, var(--wood), var(--wood-dark) 50%, var(--wood));
+    border-radius: 16px;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.6), 0 0 0 2px #5a3d28, 0 0 0 5px var(--wood-dark);
+  }
+  .platter {
+    position: absolute; left: 50px; top: 50%; transform: translateY(-50%);
+    width: 230px; height: 230px;
+  }
+  .vinyl {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: var(--vinyl);
+    box-shadow: 0 0 0 1px #2a2a2a, 0 0 0 3px #1a1a1a, 0 0 0 5px #2a2a2a,
+                0 0 0 7px #1a1a1a, 0 0 0 9px #2a2a2a, 0 8px 25px rgba(0,0,0,0.5);
+    transition: transform 0.3s;
+  }
+  .vinyl::before {
+    content: ''; position: absolute; inset: 12px; border-radius: 50%;
+    background: repeating-radial-gradient(circle at center,
+      transparent 0px, transparent 2px, rgba(40,40,40,0.4) 2px, rgba(40,40,40,0.4) 3px);
+  }
+  .vinyl.spinning { animation: spin 2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .label {
+    position: absolute; width: 70px; height: 70px; border-radius: 50%;
+    background: #c42828; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; z-index: 2; box-shadow: 0 0 0 2px #f4e4c1;
+  }
+  .label-text {
+    font-size: 6px; color: #f4e4c1; text-transform: uppercase;
+    letter-spacing: 1px; line-height: 1.3; max-width: 55px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .spindle { width: 6px; height: 6px; border-radius: 50%; background: #888; margin-top: 2px; }
+
+  .tonearm {
+    position: absolute; right: 30px; top: 50px; width: 160px; height: 180px; z-index: 5;
+  }
+  .tonearm-base {
+    position: absolute; right: 0; top: 15px; width: 32px; height: 32px;
+    background: radial-gradient(circle at 30% 30%, #666, #333);
+    border-radius: 50%; box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+  }
+  .tonearm-arm {
+    position: absolute; right: 24px; top: 28px; width: 130px; height: 5px;
+    background: linear-gradient(90deg, #999, var(--brass) 40%, #888);
+    border-radius: 3px; transform-origin: right center;
+    transform: rotate(28deg); transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.4);
+  }
+  .tonearm-arm.playing { transform: rotate(14deg); }
+  .tonearm-head {
+    position: absolute; left: 0; top: -3px; width: 14px; height: 10px;
+    background: #222; border-radius: 2px; border-bottom: 2px solid #555;
+  }
+
+  /* === Cover Flow View === */
+  .coverflow-view { display: none; }
+  .coverflow-view.active { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+
+  .glass-backdrop {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 320px;
+    background: linear-gradient(to top, rgba(20,20,40,0.9), transparent);
+    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+  }
+
+  .coverflow-container {
+    position: relative; width: 100%; height: 400px;
+    perspective: 1000px; perspective-origin: 50% 50%;
+  }
+  .carousel {
+    position: absolute; top: 50%; left: 50%;
+    width: 200px; height: 200px;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%) rotateY(var(--rotation, 0deg));
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .album {
+    position: absolute; width: 200px; height: 200px;
+    left: 50%; top: 50%; margin-left: -100px; margin-top: -100px;
+    transform-style: preserve-3d; cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .album-art {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #2a2a4a, #1a1a2a);
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; transition: all 0.3s; overflow: hidden; position: relative;
+  }
+  .album[data-offset="-2"], .album[data-offset="2"] { opacity: 0.4; }
+  .album[data-offset="-1"], .album[data-offset="1"] { opacity: 0.7; }
+  .album[data-offset="0"] { opacity: 1; }
+  .album[data-offset="0"] .album-art {
+    transform: scale(1.15);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 40px rgba(45,212,191,0.1);
+  }
+  .album-reflection {
+    position: absolute; top: 100%; left: 0; width: 100%; height: 100px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent 70%);
+    transform: scaleY(-1); opacity: 0.3; pointer-events: none;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+  }
+  .album-info {
+    position: absolute; bottom: -50px; left: 50%; transform: translateX(-50%);
+    text-align: center; opacity: 0; transition: opacity 0.3s; white-space: nowrap;
+  }
+  .album[data-offset="0"] .album-info { opacity: 1; }
+  .album-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .album-artist { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  .dots {
+    display: flex; gap: 6px; margin-top: 16px; z-index: 100;
+  }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); transition: all 0.3s; cursor: pointer;
+  }
+  .dot.active { background: var(--green); box-shadow: 0 0 8px rgba(45,212,191,0.5); }
+
+  /* Shared */
+  .now-playing { text-align: center; z-index: 10; }
+  .np-title { font-size: 16px; font-weight: 600; }
+  .np-artist { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .controls { display: flex; gap: 14px; align-items: center; z-index: 10; margin-top: 16px; }
+  .btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 1px solid rgba(196,163,90,0.25);
+    background: rgba(20,15,10,0.6); color: var(--brass);
+    font-size: 16px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; transition: 0.15s;
+    backdrop-filter: blur(8px);
+  }
+  .btn:hover { border-color: var(--brass); box-shadow: 0 0 16px rgba(196,163,90,0.15); }
+  .btn.play { width: 54px; height: 54px; font-size: 20px; background: rgba(196,163,90,0.12); }
+
+  .volume {
+    position: absolute; right: 30px; bottom: 30px; z-index: 10;
+  }
+  .vol-knob {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #555, #222);
+    border: 2px solid #444; cursor: grab;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  }
+  .vol-dot {
+    width: 2px; height: 12px; background: var(--brass); border-radius: 1px;
+    position: absolute; bottom: 50%; transform-origin: bottom center;
+  }
+
+  .ipod-badge {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    padding: 3px 10px; background: rgba(45,212,191,0.08);
+    border: 1px solid rgba(45,212,191,0.15); border-radius: 10px;
+    font-size: 9px; color: var(--green); z-index: 10; letter-spacing: 1px;
+  }
+
+  .empty-state {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 15;
+    pointer-events: none;
+  }
+  .empty-icon { font-size: 60px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-text { font-size: 14px; color: var(--text-dim); }
+  .empty-sub { font-size: 11px; color: var(--text-dim); margin-top: 6px; opacity: 0.6; }
+</style>
+</head>
+<body>
+
+<!-- Left: Library -->
+<div class="library">
+  <div class="lib-header">
+    <div class="lib-title">📱 Spool</div>
+    <div class="lib-count" id="lib-count">Virtual iPod — drop files to load</div>
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="turntable" onclick="setView('turntable')">📀 Turntable</button>
+      <button class="view-btn" data-view="coverflow" onclick="setView('coverflow')">💿 Cover Flow</button>
+    </div>
+  </div>
+  <div class="folder-status">
+    <div class="folder-dot watching" id="watch-dot"></div>
+    <span id="watch-text">Watching Spool Music folder</span>
+  </div>
+  <div class="track-list" id="track-list"></div>
+</div>
+
+<!-- Right: Player -->
+<div class="player" id="player-zone">
+  <div class="ipod-badge">◈ SPOOL DEVICE</div>
+
+  <div class="empty-state" id="empty-state">
+    <div class="empty-icon">💿</div>
+    <div class="empty-text">Drop music in your Spool folder</div>
+    <div class="empty-sub">Desktop → Spool Music</div>
+  </div>
+
+  <!-- Turntable View -->
+  <div class="turntable-view" id="turntable-view">
+    <div class="turntable" id="turntable" style="display:none">
+      <div class="plinth"></div>
+      <div class="platter">
+        <div class="vinyl" id="vinyl">
+          <div class="label" id="label">
+            <span class="label-text" id="label-text">SPOOL</span>
+            <div class="spindle"></div>
+          </div>
+        </div>
+      </div>
+      <div class="tonearm">
+        <div class="tonearm-arm" id="tonearm">
+          <div class="tonearm-head"></div>
+        </div>
+        <div class="tonearm-base"></div>
+      </div>
+    </div>
+
+    <div class="now-playing" id="now-playing" style="display:none">
+      <div class="np-title" id="np-title">Select a track</div>
+      <div class="np-artist" id="np-artist"></div>
+    </div>
+  </div>
+
+  <!-- Cover Flow View -->
+  <div class="coverflow-view" id="coverflow-view">
+    <div class="glass-backdrop"></div>
+    <div class="coverflow-container">
+      <div class="carousel" id="carousel"></div>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="now-playing" id="cf-now-playing" style="display:none">
+      <div class="np-title" id="cf-np-title">Select a track</div>
+      <div class="np-artist" id="cf-np-artist"></div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls" style="display:none">
+    <button class="btn" onclick="prev()" title="Previous">◀</button>
+    <button class="btn play" id="play-btn" onclick="togglePlay()" title="Play/Pause">▶</button>
+    <button class="btn" onclick="next()" title="Next">▶</button>
+    <button class="btn" onclick="openFolder()" title="Open Folder">📂</button>
+  </div>
+
+  <div class="volume">
+    <div class="vol-knob" id="vol-knob" title="Volume">
+      <div class="vol-dot" id="vol-dot" style="transform: rotate(-120deg)"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // === State ===
+  let tracks = [];
+  let currentIndex = -1;
+  let isPlaying = false;
+  let currentView = 'turntable';
+  let volume = 0.7;
+  const audio = new Audio();
+
+  // === File Watcher ===
+  const SPOOL_DIR_ID = 'spool-music-dir';
+  let dirHandle = null;
+
+  async function pickFolder() {
+    if (!('showDirectoryPicker' in window)) {
+      alert('Your browser doesn\'t support folder access.\n\nDrag and drop files onto this window instead.');
+      return false;
+    }
+    try {
+      dirHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'desktop', id: SPOOL_DIR_ID });
+      document.getElementById('watch-text').textContent = 'Watching: ' + dirHandle.name;
+      await scanFolder();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  async function scanFolder() {
+    if (!dirHandle) return;
+    tracks = [];
+    const audioExts = ['.mp3', '.wav', '.flac', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.m4p'];
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === 'file') {
+        const ext = '.' + entry.name.split('.').pop().toLowerCase();
+        if (audioExts.includes(ext)) {
+          const file = await entry.getFile();
+          tracks.push({ name: entry.name.replace(/\.[^.]+$/, ''), file: file, url: URL.createObjectURL(file), size: file.size });
+        }
+      }
+    }
+    tracks.sort((a,b) => a.name.localeCompare(b.name));
+    renderList();
+    updateUI();
+    if (currentView === 'coverflow') renderCarousel();
+  }
+
+  // === Drag & Drop ===
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('drop', async e => {
+    e.preventDefault();
+    for (const item of e.dataTransfer.items) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|flac|ogg|m4a|aac|wma|opus)$/i)) {
+          tracks.push({ name: file.name.replace(/\.[^.]+$/, ''), file: file, url: URL.createObjectURL(file), size: file.size });
+        }
+      }
+    }
+    tracks.sort((a,b) => a.name.localeCompare(b.name));
+    renderList();
+    updateUI();
+    if (currentView === 'coverflow') renderCarousel();
+    document.getElementById('watch-text').textContent = tracks.length + ' tracks loaded';
+  });
+
+  // === View Toggle ===
+  function setView(view) {
+    currentView = view;
+    document.querySelectorAll('.view-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+    document.getElementById('turntable-view').style.display = view === 'turntable' ? 'flex' : 'none';
+    document.getElementById('coverflow-view').classList.toggle('active', view === 'coverflow');
+    if (view === 'coverflow' && tracks.length > 0) renderCarousel();
+    updateUI();
+  }
+
+  // === Track List ===
+  function renderList() {
+    const el = document.getElementById('track-list');
+    el.innerHTML = tracks.map((t, i) => `
+      <div class="track-item${i === currentIndex ? ' playing' : ''}" data-index="${i}" onclick="playTrack(${i})">
+        <span class="track-num">${i+1}</span>
+        <div class="track-info">
+          <div class="track-name">${t.name}</div>
+          <div class="track-artist">Spool Library</div>
+        </div>
+        <span class="track-len">—</span>
+      </div>
+    `).join('');
+    document.getElementById('lib-count').textContent = tracks.length + ' tracks';
+  }
+
+  function updateUI() {
+    const visible = tracks.length > 0;
+    document.getElementById('empty-state').style.display = visible ? 'none' : 'flex';
+    if (currentView === 'turntable') {
+      document.getElementById('turntable').style.display = visible ? 'block' : 'none';
+      document.getElementById('now-playing').style.display = visible ? 'block' : 'none';
+    }
+    document.getElementById('controls').style.display = visible ? 'flex' : 'none';
+  }
+
+  // === Cover Flow ===
+  function renderCarousel() {
+    const carousel = document.getElementById('carousel');
+    const dots = document.getElementById('dots');
+    if (tracks.length === 0) { carousel.innerHTML = ''; dots.innerHTML = ''; return; }
+
+    const angleStep = 45;
+    const zOffset = 150;
+
+    carousel.innerHTML = tracks.map((t, i) => {
+      const offset = i - currentIndex;
+      const displayOffset = Math.max(-2, Math.min(2, offset));
+      const rotateY = offset * angleStep;
+      const translateZ = -Math.abs(offset) * zOffset;
+      const translateX = offset * 100;
+      const colors = [['#e04343','#ff6b6b'],['#2dd4bf','#4ade80'],['#c4a35a','#f59e0b'],['#8b5cf6','#a78bfa'],['#3b82f6','#60a5fa'],['#ec4899','#f472b6']];
+      const [c1, c2] = colors[Math.abs(t.name.charCodeAt(0) % colors.length)];
+
+      return `
+        <div class="album" data-index="${i}" data-offset="${displayOffset}" style="transform: translateX(${translateX}px) rotateY(${rotateY}deg) translateZ(${translateZ}px)">
+          <div class="album-art"><div style="width:100%;height:100%;background:linear-gradient(135deg,${c1},${c2});display:flex;align-items:center;justify-content:center;font-size:48px;">${t.name.charAt(0).toUpperCase()}</div></div>
+          <div class="album-reflection"><div style="width:100%;height:100%;background:linear-gradient(135deg,${c1},${c2});display:flex;align-items:center;justify-content:center;font-size:48px;opacity:0.5;">${t.name.charAt(0).toUpperCase()}</div></div>
+          <div class="album-info"><div class="album-title">${t.name}</div><div class="album-artist">Spool Library</div></div>
+        </div>
+      `;
+    }).join('');
+
+    carousel.style.setProperty('--rotation', '0deg');
+
+    dots.innerHTML = tracks.map((t, i) => `<div class="dot${i === currentIndex ? ' active' : ''}" onclick="goToIndex(${i})"></div>`).join('');
+  }
+
+  function goToIndex(i) {
+    if (i < 0 || i >= tracks.length) return;
+    currentIndex = i;
+    renderList();
+    if (currentView === 'coverflow') renderCarousel();
+  }
+
+  // === Playback ===
+  function playTrack(i) {
+    if (i < 0 || i >= tracks.length) return;
+    currentIndex = i;
+    const t = tracks[i];
+
+    document.querySelectorAll('.track-item').forEach(el => el.classList.remove('playing'));
+    const item = document.querySelector(`.track-item[data-index="${i}"]`);
+    if (item) item.classList.add('playing');
+
+    document.getElementById('np-title').textContent = t.name;
+    document.getElementById('cf-np-title').textContent = t.name;
+    document.getElementById('label-text').textContent = t.name.substring(0, 16);
+
+    audio.src = t.url;
+    audio.volume = volume;
+    audio.play().catch(e => console.error('Playback error:', e));
+
+    document.getElementById('vinyl').classList.add('spinning');
+    document.getElementById('tonearm').classList.add('playing');
+    document.getElementById('play-btn').innerHTML = '⏸';
+    isPlaying = true;
+
+    if (currentView === 'coverflow') renderCarousel();
+  }
+
+  function togglePlay() {
+    if (tracks.length === 0) return;
+    if (currentIndex === -1) { playTrack(0); return; }
+    if (isPlaying) {
+      audio.pause();
+      document.getElementById('vinyl').classList.remove('spinning');
+      document.getElementById('tonearm').classList.remove('playing');
+      document.getElementById('play-btn').innerHTML = '▶';
+    } else {
+      audio.play();
+      document.getElementById('vinyl').classList.add('spinning');
+      document.getElementById('tonearm').classList.add('playing');
+      document.getElementById('play-btn').innerHTML = '⏸';
+    }
+    isPlaying = !isPlaying;
+  }
+
+  function next() { playTrack((currentIndex + 1) % tracks.length); }
+  function prev() { playTrack((currentIndex - 1 + tracks.length) % tracks.length); }
+  audio.addEventListener('ended', next);
+
+  // === Volume ===
+  let dragging = false;
+  const volKnob = document.getElementById('vol-knob');
+  const volDot = document.getElementById('vol-dot');
+
+  function setVolume(v) {
+    volume = Math.max(0, Math.min(1, v));
+    audio.volume = volume;
+    volDot.style.transform = `rotate(${-120 + volume * 240}deg)`;
+  }
+
+  volKnob.addEventListener('mousedown', e => { dragging = true; e.preventDefault(); });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const r = volKnob.getBoundingClientRect();
+    const cx = r.left + r.width/2, cy = r.top + r.height/2;
+    setVolume((Math.atan2(e.clientX - cx, -(e.clientY - cy)) + Math.PI) / (2*Math.PI));
+  });
+  document.addEventListener('mouseup', () => dragging = false);
+  volKnob.addEventListener('wheel', e => { e.preventDefault(); setVolume(volume - e.deltaY * 0.001); });
+
+  // === Keyboard ===
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if (e.code === 'ArrowDown') { e.preventDefault(); playTrack(Math.min(currentIndex + 1, tracks.length - 1)); }
+    else if (e.code === 'ArrowUp') { e.preventDefault(); playTrack(Math.max(0, currentIndex - 1)); }
+  });
+
+  // === Init ===
+  function openFolder() { pickFolder(); }
+  updateUI();
+  setVolume(0.7);
+
+  (async () => {
+    if ('showDirectoryPicker' in window) {
+      try {
+        dirHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'desktop', id: SPOOL_DIR_ID });
+        document.getElementById('watch-text').textContent = 'Watching: ' + dirHandle.name;
+        document.getElementById('watch-dot').classList.add('watching');
+        await scanFolder();
+      } catch (e) {
+        document.getElementById('watch-text').textContent = 'Click 📂 to pick your Spool Music folder';
+        document.getElementById('watch-dot').classList.remove('watching');
+      }
+    }
+  })();
+</script>
+</body>
+</html>
