@@ -41,3 +41,20 @@
 - keep architecture decisions simple and reversible
 - when uncertain, preserve and label instead of deleting
 - keep status and ownership visible in docs so onboarding does not rely on chat history
+
+## Version 1 Checkpoint 1 - Local Run Instructions
+
+These steps install only the minimal prototype dependencies from `pyproject.toml`:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -e .
+python -m spool.main
+```
+
+Expected output during Checkpoint 1:
+
+- `[Spool] Checkpoint 1 scaffold is installed.`
+- `[Spool] UI startup is planned for Checkpoint 2.`
