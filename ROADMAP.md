@@ -1,101 +1,75 @@
 # Spool Roadmap
 
-> "First you build it. Then you hold it."
+This roadmap reflects the Version 0 directive: organize first, build later.
 
----
+## Phase Overview
 
-## Version Path
+| Phase | Focus | Status |
+|------|------|------|
+| Version 0 | Repository organization, preservation, documentation, handoff clarity | In progress |
+| Version 1 | Core desktop app prototype (Python + PySide6) | Not started |
+| Version 2+ | Platform expansion, polish, possible device integration | Future |
 
-| Version | What | Hardware | Time | Status |
-|---------|------|----------|------|--------|
-| **v1.0** | Browser player — audio engine + Cover Flow + visualizer | Your PC | 12 hours | 🔴 Not started |
-| **v1.5** | Polish — playlists, queue, library management | Your PC | 4 hours | ⚪ Later |
-| **v2.0** | Port to Raspberry Pi — touchscreen kiosk | Pi Zero 2 W + screen | Parts + 2 weekends | ⚪ Later |
-| **v2.5** | Custom 3D-printed case + battery | Same Pi | 1 weekend | ⚪ Later |
-| **v3.0** | Dedicated device — fully self-contained | Final enclosure | TBD | ⚪ Vision |
+## Version 0 (Current)
 
----
+### Goals
 
-## v1.0 — Browser Player (NOW)
+- establish a clean, scalable repository structure
+- preserve experiments and historical planning without losing context
+- define canonical documentation and contributor expectations
+- reduce ambiguity between prototype work and future production work
 
-**Goal:** A working music player in a single HTML file. Drop your music in, browse with Cover Flow, watch the visualizer react. Opens by double-click. Works offline.
+### Deliverables
 
-**Total time:** ~12 hours (5 sprints)
+- finalized top-level directory layout
+- archived historical docs under `archive/docs/`
+- prototypes organized under `prototypes/web/` and `prototypes/python/`
+- canonical planning and audit documents at repository root
+- clear sample media policy for future testing
 
-```
-Sprint 1 ─── Sprint 2 ─── Sprint 3 ─── Sprint 4 ─── Sprint 5
-[Player]      [Cover Flow]  [Visualizer] [Glass UI]   [Library]
-  2-3h          2-3h          2-3h         1-2h         2-3h
-```
+### Out of Scope
 
-### Sprint 1 — Core Player
-- Audio engine (Web Audio API)
-- Play/pause, skip, volume
-- Progress bar + seek
-- Dark UI shell
-- Drag & drop or file picker to load music
+- production playback implementation
+- drag/drop import systems as a deliverable
+- XML parsing systems
+- Apple Music integration
+- database implementation
+- major architecture rewrites without explicit review
 
-### Sprint 2 — Cover Flow
-- 3D CSS carousel
-- Album art with glass reflections
-- Swipe/click to flip albums
-- Select to play
+## Version 1 (Planned, Not Started)
 
-### Sprint 3 — Visualizer
-- FFT frequency bars
-- Waveform display
-- Multiple modes (bars → waveform → particles)
-- Color extraction from album art
+When Version 0 is complete and reviewed, Version 1 is expected to begin with:
 
-### Sprint 4 — Glass UI
-- backdrop-filter blur effects
-- Click wheel inspired navigation zone
-- Smooth transitions
-- Album metadata display
+- local MP3 import workflows
+- metadata reading and management
+- simple local library view
+- offline playback
+- basic playlist and library organization
 
-### Sprint 5 — Library
-- Playlists, queue, shuffle
-- Folder scanning
-- Recently played
+Primary prototype stack target: Python + PySide6.
 
----
+### Version 1 Handoff - Build First
 
-## v1.5 — Polish (LATER)
+- local MP3 import (local files only)
+- metadata reading (ID3/basic tag extraction)
+- simple library browsing UI
+- local offline playback
 
-- Mobile responsive layout
-- Keyboard shortcuts
-- Mini player mode
-- Last.fm scrobbling
-- Export playlist as file
+### Version 1 Handoff - Do Not Start With
 
----
+- Apple Music API integration
+- XML import pipelines
+- hardware sync/device integration
+- cloud accounts or account systems
+- complex database architecture before core local flow is proven
 
-## v2.0 — Hardware Port (FUTURE)
+## Version 2+ (Future)
 
-**Prerequisites:** v1.0 is finished and you love it.
+- deeper platform hardening for Windows/macOS
+- performance tuning and UX polish
+- potential C++ low-level/device modules if required
+- optional hardware/device integration after core app maturity
 
-- Order parts (~$138)
-- Raspberry Pi OS Lite + touchscreen driver
-- Mopidy or custom backend
-- v1.0 UI adapted for touchscreen
-- Boots directly into player (kiosk mode)
-- USB mass storage — plug into PC, drop music, unplug
+## Immediate Next Step
 
----
-
-## v3.0 — Final Device (VISION)
-
-- CNC aluminum or polished 3D print enclosure
-- Dedicated DAC for audiophile output
-- Bluetooth for wireless headphones
-- Haptic feedback on scroll
-- 8+ hour battery life
-- Fits in your pocket
-
----
-
-## Next Action
-
-**Build Sprint 1 right now** — audio engine + dark UI shell.
-
-Say "build it" and I'll start coding.
+Complete Version 0 audit follow-up items listed in `VERSION_0_AUDIT.md`, then confirm readiness gate for Version 1 planning.

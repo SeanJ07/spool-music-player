@@ -1,71 +1,59 @@
-# Spool
+# Spool (Version 0)
 
-> iPod-inspired music player with turntable visualization and Cover Flow
+Spool is a long-term cross-platform desktop music app project inspired by the iPod experience.
 
-A nostalgic music player that brings the classic iPod experience to your desktop with modern touches - vinyl record animation, Cover Flow album browsing, and voice integration.
+Version 0 is intentionally focused on repository organization, preservation, documentation, and handoff clarity. It is not for implementing production playback features yet.
 
-## Features
+## Version 0 Scope
 
-- **Turntable View** - Vinyl record that spins while playing
-- **Cover Flow** - Flip through albums like the classic iPod
-- **Voice Commands** - "Spiral, play [album]" integration
-- **Local Music Library** - No streaming, your files
-- **Minimal UI** - Focus on the music, not the interface
+Version 0 exists to:
 
-## Tech Stack
+- organize this repository into a scalable structure
+- preserve past experiments and partial work safely
+- clarify project direction and architecture boundaries
+- make collaboration easier for future human and AI contributors
 
-- **Python + Tkinter** - Lightweight native UI
-- **pygame** - Audio playback
-- **mutagen** - MP3 metadata reading
-- **Web fallback** - HTML/CSS/JS version available
+Version 0 does not include feature implementation for playback systems, integrations, or storage backends.
 
-## Screenshots
+## Current Repository Structure
 
-```
-┌─────────────────────────┐
-│      ▶ Now Playing      │
-│  ┌───────────────────┐  │
-│  │   ┌───────────┐   │  │
-│  │   │  VINYL    │   │  │
-│  │   │   RECORD  │   │  │
-│  │   │  ◄◄   ▶►  │   │  │
-│  │   └───────────┘   │  │
-│  └───────────────────┘  │
-│                         │
-│  Track: Midnight City   │
-│  Artist: M83           │
-│  Album: Hurry Up        │
-│  [━━━━━━━━━━━━○] 3:42  │
-└─────────────────────────┘
+```text
+spool-music-player/
+├── src/                  # Future production application source
+├── docs/                 # Project documentation space
+├── assets/               # Static assets and design material
+├── tests/                # Future test suites
+├── tools/                # Utility scripts and automation tools
+├── prototypes/           # Experimental implementations preserved as reference
+│   ├── python/
+│   └── web/
+├── archive/              # Historical docs and artifacts no longer canonical
+│   └── docs/
+├── legacy/               # Reserved for old code/systems requiring migration later
+├── samples/              # Sample data guidance (no active media committed)
+├── config/               # Configuration templates and env conventions
+└── *.md                  # Canonical project-level guidance and audit docs
 ```
 
-## Development
+## Canonical Docs
 
-```bash
-# Scan music library
-python3 ipod_scanner.py
+- `PROJECT_VISION.md` - product intent and boundaries
+- `ROADMAP.md` - phased plan with Version 0 priorities
+- `VERSION_0_AUDIT.md` - repository audit findings and review queue
+- `ARCHIVE_MANIFEST.md` - preserved historical file map and rationale
+- `DEVELOPMENT_NOTES.md` - contributor norms and collaboration notes
+- `CHANGELOG.md` - documented repository history
 
-# Launch player
-python3 spool_launcher.py
+## Where Prior Work Lives
 
-# Or web version
-open spool.html
-```
+- Web and Python experiments are under `prototypes/`.
+- Historical planning and concept documents are under `archive/docs/`.
+- Nothing was aggressively rewritten; previous work is preserved for later review.
 
-## Project Structure
+## Sample Media Policy (Version 0)
 
-```
-ipod-music-player/
-├── spool.html          # Main web player
-├── coverflow.html      # Cover Flow standalone
-├── record-player.html  # Turntable standalone
-├── ipod_scanner.py     # Library scanner
-└── spool_launcher.py   # Desktop launcher
-```
+Sample MP3 files are for Version 1 testing, not Version 0 implementation.
 
-## Future
-
-- Spiral desktop app integration
-- AI DJ mode (auto-playlist generation)
-- Vinyl crackle effects
-- Hardware integration (physical iPod controls)
+- Keep local test media out of git.
+- Place local files in `samples/media/` when Version 1 testing starts.
+- See `samples/README.md` for detailed guidance.
