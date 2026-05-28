@@ -1,5 +1,12 @@
-"""Service layer package for file import, metadata, and playback.
+"""Service layer package for import and metadata logic."""
 
-Implementation is intentionally deferred until Checkpoint 2+.
-"""
+from .library_service import ImportResult, import_mp3_paths
+from .metadata_service import MetadataReadResult, read_mp3_metadata
+
+__all__ = [
+    "ImportResult",
+    "MetadataReadResult",
+    "import_mp3_paths",
+    "read_mp3_metadata",
+]
 

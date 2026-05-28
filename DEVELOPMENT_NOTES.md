@@ -51,6 +51,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -e .
+# If editable install is not supported in your pip version, use:
+# pip install .
 python -m spool.main
 ```
 
@@ -58,3 +60,63 @@ Expected output during Checkpoint 1:
 
 - `[Spool] Checkpoint 1 scaffold is installed.`
 - `[Spool] UI startup is planned for Checkpoint 2.`
+
+## Version 1 Checkpoint 2 - Metadata/Import Terminal Test
+
+Checkpoint 2 verifies one thing only:
+
+- local MP3 paths can be parsed into clean in-memory `Track` objects
+
+What Checkpoint 2 does not do:
+
+- no PySide6 UI shell yet
+- no file picker yet
+- no playback yet
+- no copying/moving music files
+
+### Where to put local sample MP3 files
+
+Place local-only files in:
+
+- `samples/media/mp3/`
+
+These are test files only and must not be committed.
+
+### macOS/Linux commands
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -e .
+
+python tools/dev_scan_mp3.py samples/media/mp3/song1.mp3
+python tools/dev_scan_mp3.py samples/media/mp3/song1.mp3 samples/media/mp3/song2.mp3 samples/media/mp3/song3.mp3
+```
+
+### Windows PowerShell commands
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -e .
+# If editable install is not supported in your pip version, use:
+# pip install .
+
+python tools/dev_scan_mp3.py samples/media/mp3/song1.mp3
+python tools/dev_scan_mp3.py samples/media/mp3/song1.mp3 samples/media/mp3/song2.mp3 samples/media/mp3/song3.mp3
+```
+
+### Successful output should include
+
+- `[Spool][Scan] Imported N track(s):`
+- one block per track with `title`, `artist`, `album`, `duration`, and `path`
+- fallback values like `Unknown Artist`, `Unknown Album`, or filename-as-title when tags are missing
+
+### Common failure cases
+
+- path does not exist
+- path is not a file
+- file is not `.mp3` (skipped in Version 1)
+- MP3 exists but metadata parsing fails (reported as an error, no crash)

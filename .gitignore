@@ -11,3 +11,7 @@ Thumbs.db
 *.m4a
 *.flac
 *.wav
+
+# Local sample media for development checks
+samples/media/**
+!samples/README.md

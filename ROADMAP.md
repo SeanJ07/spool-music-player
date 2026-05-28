@@ -73,3 +73,7 @@ Primary prototype stack target: Python + PySide6.
 ## Immediate Next Step
 
 Complete Version 0 audit follow-up items listed in `VERSION_0_AUDIT.md`, then confirm readiness gate for Version 1 planning.
+
+Version 1 checkpoint note:
+
+- Checkpoint 2 focuses on metadata/import logic only (no UI shell or playback yet).

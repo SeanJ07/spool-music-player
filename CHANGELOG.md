@@ -68,3 +68,27 @@
 ### Notes
 
 - Prior versions of `README.md` and `ROADMAP.md` remain recoverable through Git history (`git log` / `git show`).
+
+## 2026-05-28 - Version 1 Checkpoint 2 metadata/import foundation
+
+### Added
+
+- `src/spool/services/metadata_service.py`
+  - reads basic MP3 metadata with mutagen
+  - applies fallback values when tags are missing
+  - returns clear success/failure results without crashing
+- `src/spool/services/library_service.py`
+  - accepts local path list
+  - imports `.mp3` files in-place (no file copy/move)
+  - returns imported tracks, skipped files, and errors
+- `tools/dev_scan_mp3.py`
+  - terminal-only helper for testing 1+ local MP3 files before UI work
+
+### Changed
+
+- `src/spool/services/__init__.py` exports import/metadata services.
+- `.gitignore` now ignores `samples/media/**` local test media.
+- `DEVELOPMENT_NOTES.md` now includes Checkpoint 2 setup/test instructions for:
+  - macOS/Linux
+  - Windows PowerShell
+  - expected output and common failure cases

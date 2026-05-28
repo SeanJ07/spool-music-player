@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-@dataclass(slots=True)
+@dataclass
 class Track:
     """Represents one local MP3 file in the Version 1 library view.
 
