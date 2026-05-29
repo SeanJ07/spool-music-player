@@ -1,59 +1,38 @@
-# Spool (Version 0)
+# Spool
 
-Spool is a long-term cross-platform desktop music app project inspired by the iPod experience.
+A cross-platform desktop music player built around the feeling of using an iPod — turntable visualization, Cover Flow browsing, the works. Started because I wanted something that actually looked good on a desktop and felt intentional, not just another media player.
 
-Version 0 is intentionally focused on repository organization, preservation, documentation, and handoff clarity. It is not for implementing production playback features yet.
+This is Version 0. That means the repo is organized, documented, and ready for real development — not a dumping ground of half-finished ideas. Prior experiments are preserved under `prototypes/`, old docs under `archive/`, and the structure is set up so future work has somewhere clean to land.
 
-## Version 0 Scope
+**Stack:** Python + HTML (prototypes), targeting cross-platform desktop for v1
 
-Version 0 exists to:
+---
 
-- organize this repository into a scalable structure
-- preserve past experiments and partial work safely
-- clarify project direction and architecture boundaries
-- make collaboration easier for future human and AI contributors
-
-Version 0 does not include feature implementation for playback systems, integrations, or storage backends.
-
-## Current Repository Structure
-
-```text
+### What's Here
 spool-music-player/
-├── src/                  # Future production application source
-├── docs/                 # Project documentation space
-├── assets/               # Static assets and design material
-├── tests/                # Future test suites
-├── tools/                # Utility scripts and automation tools
-├── prototypes/           # Experimental implementations preserved as reference
-│   ├── python/
-│   └── web/
-├── archive/              # Historical docs and artifacts no longer canonical
-│   └── docs/
-├── legacy/               # Reserved for old code/systems requiring migration later
-├── samples/              # Sample data guidance (no active media committed)
-├── config/               # Configuration templates and env conventions
-└── *.md                  # Canonical project-level guidance and audit docs
-```
+├── src/              # Production source (v1+)
+├── docs/             # Project documentation
+├── assets/           # Design assets and static files
+├── tests/            # Test suites (v1+)
+├── tools/            # Utility scripts
+├── prototypes/       # Past experiments — Python and web versions
+├── archive/          # Old docs, preserved for reference
+├── legacy/           # Old systems flagged for future migration
+├── samples/          # Sample data guidance (no media committed)
+└── config/           # Config templates and env conventions
 
-## Canonical Docs
+### Key Docs
 
-- `PROJECT_VISION.md` - product intent and boundaries
-- `ROADMAP.md` - phased plan with Version 0 priorities
-- `VERSION_0_AUDIT.md` - repository audit findings and review queue
-- `ARCHIVE_MANIFEST.md` - preserved historical file map and rationale
-- `DEVELOPMENT_NOTES.md` - contributor norms and collaboration notes
-- `CHANGELOG.md` - documented repository history
+- `PROJECT_VISION.md` — what this is and isn't
+- `ROADMAP.md` — phased plan, v0 through v1+
+- `DEVELOPMENT_NOTES.md` — contributor norms
+- `CHANGELOG.md` — history of repo changes
+- `VERSION_0_AUDIT.md` — audit of everything in the repo and what to do with it
 
-## Where Prior Work Lives
+### Status
 
-- Web and Python experiments are under `prototypes/`.
-- Historical planning and concept documents are under `archive/docs/`.
-- Nothing was aggressively rewritten; previous work is preserved for later review.
+Version 0 is complete. The repo is organized and the groundwork is laid. Version 1 is where playback, integrations, and the actual UI start getting built.
 
-## Sample Media Policy (Version 0)
+---
 
-Sample MP3 files are for Version 1 testing, not Version 0 implementation.
-
-- Keep local test media out of git.
-- Place local files in `samples/media/` when Version 1 testing starts.
-- See `samples/README.md` for detailed guidance.
+*Long-term project. Built because I wanted it to exist.*
