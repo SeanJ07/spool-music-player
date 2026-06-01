@@ -26,6 +26,9 @@ class Track:
     artist: str = "Unknown Artist"
     album: str = "Unknown Album"
     duration_seconds: float = 0.0
+    album_art_data: bytes | None = None
+    album_art_mime: str | None = None
+    lyrics: str | None = None
 
     def duration_label(self) -> str:
         """Return a mm:ss string for simple display tables.

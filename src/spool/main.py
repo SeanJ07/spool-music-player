@@ -1,20 +1,25 @@
 """Application entrypoint for the Spool desktop prototype.
 
-This is intentionally minimal for Checkpoint 1.
-The real PySide6 startup wiring will be added in Checkpoint 2.
+Checkpoint 3: launches the PySide6 main window. The window starts empty;
+use File → Open MP3 Files… to import local files via the existing
+library_service.
 """
 
+from __future__ import annotations
 
-def main() -> None:
-    """Run the current checkpoint entrypoint.
+import sys
 
-    For now this function only confirms that the package is installed
-    and that the command entrypoint works.
-    """
-    print("[Spool] Checkpoint 1 scaffold is installed.")
-    print("[Spool] UI startup is planned for Checkpoint 2.")
+from PySide6.QtWidgets import QApplication
+
+from spool.ui import MainWindow
+
+
+def main() -> int:
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    return app.exec()
 
 
 if __name__ == "__main__":
-    main()
-
+    raise SystemExit(main())

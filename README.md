@@ -31,7 +31,21 @@ spool-music-player/
 
 ### Status
 
-Version 0 is complete. The repo is organized and the groundwork is laid. Version 1 is where playback, integrations, and the actual UI start getting built.
+🎵 **WORKING VERSION AVAILABLE!** 
+
+Spool now has a fully functional desktop music player with GUI. See `QUICK_START.md` to run it immediately.
+
+**Current Features:**
+- Two-screen UI (Library + Now Playing)  
+- MP3 import via menu or + button
+- Full metadata extraction (art, lyrics, tags)
+- Playback controls with volume slider
+- Spinning vinyl visualization
+- Beautiful gold/dark chrome theme
+
+**Next Phase:** Persistence, macOS testing, Cover Flow mode.
+
+---
 
 ---
 

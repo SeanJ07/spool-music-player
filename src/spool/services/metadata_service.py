@@ -88,6 +88,9 @@ def read_mp3_metadata(file_path: str | Path) -> MetadataReadResult:
         # Safe fallback for corrupt header duration.
         duration_seconds = 0.0
 
+    album_art_data, album_art_mime = _extract_album_art(tags)
+    lyrics = _extract_lyrics(tags)
+
     track = Track(
         path=path.resolve(),
         filename=path.name,
@@ -95,8 +98,51 @@ def read_mp3_metadata(file_path: str | Path) -> MetadataReadResult:
         artist=artist,
         album=album,
         duration_seconds=duration_seconds,
+        album_art_data=album_art_data,
+        album_art_mime=album_art_mime,
+        lyrics=lyrics,
     )
     return MetadataReadResult(source_path=path, track=track)
+
+
+def _extract_album_art(tags: object) -> tuple[bytes | None, str | None]:
+    """Pull the first APIC frame (embedded cover art) if present."""
+    if not tags:
+        return None, None
+    getall = getattr(tags, "getall", None)
+    if getall is None:
+        return None, None
+    try:
+        frames = getall("APIC")
+    except Exception:
+        return None, None
+    if not frames:
+        return None, None
+    first = frames[0]
+    data = getattr(first, "data", None)
+    mime = getattr(first, "mime", None)
+    if not isinstance(data, (bytes, bytearray)) or not data:
+        return None, None
+    return bytes(data), mime if isinstance(mime, str) else None
+
+
+def _extract_lyrics(tags: object) -> str | None:
+    """Pull the first USLT (unsynchronized lyrics) frame if present."""
+    if not tags:
+        return None
+    getall = getattr(tags, "getall", None)
+    if getall is None:
+        return None
+    try:
+        frames = getall("USLT")
+    except Exception:
+        return None
+    if not frames:
+        return None
+    text = getattr(frames[0], "text", None)
+    if isinstance(text, str) and text.strip():
+        return text
+    return None
 
 
 def _read_text_tag(tags: object, key: str, fallback: str) -> str:
