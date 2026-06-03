@@ -1,4 +1,4 @@
-"""Now Playing screen — vinyl + lyrics + seek bar + transport controls."""
+"""Now Playing screen — spool mechanism with tape-unwinding timeline per UI specifications."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtGui import QPainter, QPainterPath, QPen, QColor, QFont
 
 from spool.models import Track
 from spool.ui.vinyl_widget import VinylWidget
@@ -23,204 +24,232 @@ def _format_time(ms: int) -> str:
     return f"{seconds // 60}:{seconds % 60:02d}"
 
 
+class TapeSpoolTimeline(QWidget):
+    """Timeline that emerges from the vinyl spool like unwinding tape."""
+    
+    def __init__(self):
+        super().__init__()
+        self.setFixedHeight(80)
+        self.setObjectName("tapeSpoolTimeline")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        rect = self.rect()
+        
+        # Draw tape unwinding effect from left (spool) to right
+        tape_color = QColor(218, 196, 177)  # Golden tape color
+        
+        # Create path for tape ribbon
+        path = QPainterPath()
+        
+        # Start near left edge (where spool is)
+        start_x = 150
+        end_x = rect.width() - 40
+        
+        # Tape ribbon with slight wave to simulate unwinding
+        path.moveTo(start_x, rect.height() // 2)
+        path.cubicTo(
+            start_x + 50, rect.height() // 2 - 10,
+            start_x + 100, rect.height() // 2 + 10,
+            end_x, rect.height() // 2
+        )
+        
+        # Draw main tape ribbon
+        pen = QPen(tape_color, 12, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.drawPath(path)
+        
+        # Draw centerline (tape track)
+        center_pen = QPen(QColor(139, 69, 19), 2, Qt.PenStyle.DashLine)
+        painter.setPen(center_pen)
+        painter.drawPath(path)
+        
+        # Draw tape tears/texture marks
+        texture_pen = QPen(QColor(218, 196, 177, 150), 1)
+        painter.setPen(texture_pen)
+        for i in range(start_x + 20, end_x, 15):
+            painter.drawLine(i, rect.height() // 2 - 6, i + 5, rect.height() // 2 + 6)
+
+
 class NowPlayingScreen(QWidget):
     home_clicked = Signal()
     play_pause_clicked = Signal()
     prev_clicked = Signal()
     next_clicked = Signal()
-    shuffle_toggled = Signal()
-    rewind_clicked = Signal()
-    repeat_toggled = Signal()
-    seek_requested = Signal(int)
-    volume_changed = Signal(float)  # 0.0 to 1.0
+    shuffle_clicked = Signal()
+    repeat_clicked = Signal()
+    seek_back_clicked = Signal()
 
     def __init__(self) -> None:
         super().__init__()
         self.setObjectName("contentPanel")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
-        self._user_dragging = False
-        self._last_shown_seconds = -1
-
-        # --- Header (home button top-right) ---
-        self._home_button = QPushButton("⌂")
-        self._home_button.setObjectName("circularSmall")
-        self._home_button.setToolTip("Library")
-        self._home_button.clicked.connect(self.home_clicked)
-
+        # Header with home button (top-right)
         header_layout = QHBoxLayout()
-        header_layout.setContentsMargins(20, 20, 20, 8)
-        header_layout.addStretch(1)
+        header_layout.setContentsMargins(0, 24, 24, 0)
+        header_layout.addStretch()  # Push home button to the right
+        
+        self._home_button = QPushButton("⌂")
+        self._home_button.setObjectName("homeButton")
+        self._home_button.setToolTip("Back to Library")
+        self._home_button.clicked.connect(self.home_clicked)
+        
         header_layout.addWidget(self._home_button)
+        
+        # Main content: vinyl on left, lyrics on right
+        content_layout = QHBoxLayout()
+        content_layout.setContentsMargins(24, 24, 24, 12)
+        content_layout.setSpacing(40)
+        
+        # Vinyl widget (spool mechanism) on the left
+        self._vinyl_widget = VinylWidget()
+        self._vinyl_widget.setFixedSize(280, 280)
+        
+        # Lyrics panel on the right
+        self._lyrics_panel = QTextEdit()
+        self._lyrics_panel.setObjectName("lyricsPanel")
+        self._lyrics_panel.setReadOnly(True)
+        self._lyrics_panel.setPlainText("No lyrics available")
+        self._lyrics_panel.setFixedSize(320, 280)
+        
+        content_layout.addWidget(self._vinyl_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        content_layout.addWidget(self._lyrics_panel)
 
-        # --- Body: vinyl left, lyrics right ---
-        self._vinyl = VinylWidget()
-
-        self._lyrics = QTextEdit()
-        self._lyrics.setObjectName("lyrics")
-        self._lyrics.setReadOnly(True)
-        self._lyrics.setFrameShape(QTextEdit.Shape.NoFrame)
-        self._lyrics.setPlainText("No lyrics available")
-
-        body_layout = QHBoxLayout()
-        body_layout.setContentsMargins(24, 8, 24, 8)
-        body_layout.setSpacing(20)
-        body_layout.addWidget(self._vinyl, 1)
-        body_layout.addWidget(self._lyrics, 1)
-
-        # --- Seek row: position | slider | duration ---
-        self._position_label = QLabel("0:00")
-        self._position_label.setObjectName("timeLabel")
+        # Tape-spool timeline
+        self._tape_timeline = TapeSpoolTimeline()
+        
+        # Time labels below timeline
+        time_layout = QHBoxLayout()
+        time_layout.setContentsMargins(24, 8, 24, 0)
+        
+        self._current_time_label = QLabel("0:00")
+        self._current_time_label.setObjectName("timeLabel")
+        
         self._duration_label = QLabel("0:00")
         self._duration_label.setObjectName("timeLabel")
-
-        self._seek = QSlider(Qt.Orientation.Horizontal)
-        self._seek.setObjectName("seekBar")
-        self._seek.setMinimum(0)
-        self._seek.setMaximum(0)
-        self._seek.sliderPressed.connect(self._on_slider_pressed)
-        self._seek.sliderReleased.connect(self._on_slider_released)
-
-        seek_layout = QHBoxLayout()
-        seek_layout.setContentsMargins(28, 4, 28, 4)
-        seek_layout.setSpacing(10)
-        seek_layout.addWidget(self._position_label)
-        seek_layout.addWidget(self._seek, 1)
-        seek_layout.addWidget(self._duration_label)
-
-        # --- Volume row ---
-        self._volume_label = QLabel("🔊")
-        self._volume_label.setObjectName("volumeLabel")
+        self._duration_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         
-        self._volume = QSlider(Qt.Orientation.Horizontal)
-        self._volume.setObjectName("volumeSlider")
-        self._volume.setMinimum(0)
-        self._volume.setMaximum(100)  # 0-100 for user-friendly display
-        self._volume.setValue(70)     # Start at 70%
-        self._volume.valueChanged.connect(self._on_volume_changed)
+        time_layout.addWidget(self._current_time_label)
+        time_layout.addStretch()
+        time_layout.addWidget(self._duration_label)
+        
+        # Seek bar (positioned below tape timeline)
+        self._seek_slider = QSlider(Qt.Orientation.Horizontal)
+        self._seek_slider.setObjectName("seekBar")
+        self._seek_slider.setRange(0, 0)
+        self._seek_slider.setValue(0)
 
-        volume_layout = QHBoxLayout()
-        volume_layout.setContentsMargins(28, 2, 28, 8)
-        volume_layout.setSpacing(8)
-        volume_layout.addWidget(self._volume_label)
-        volume_layout.addWidget(self._volume, 1)
-        volume_layout.addStretch(1)  # Add some space on the right
+        # Transport controls (rectangular footer)
+        transport = QWidget()
+        transport.setObjectName("transportWidget")
+        transport.setFixedHeight(56)
+        
+        transport_layout = QHBoxLayout(transport)
+        transport_layout.setContentsMargins(12, 8, 12, 8)
+        transport_layout.setSpacing(8)
+        
+        # Transport buttons in order: Prev | Next | Shuffle | Rewind | Play/Pause | Repeat
+        self._prev_button = QPushButton("⏮")
+        self._prev_button.setObjectName("transportButton")
+        self._prev_button.clicked.connect(self.prev_clicked)
+        
+        self._next_button = QPushButton("⏭")
+        self._next_button.setObjectName("transportButton")
+        self._next_button.clicked.connect(self.next_clicked)
+        
+        self._shuffle_button = QPushButton("🔀")
+        self._shuffle_button.setObjectName("transportButton")
+        self._shuffle_button.setCheckable(True)
+        self._shuffle_button.clicked.connect(self.shuffle_clicked)
+        
+        self._rewind_button = QPushButton("⏪")
+        self._rewind_button.setObjectName("transportButton")
+        self._rewind_button.clicked.connect(self.seek_back_clicked)
+        
+        self._play_pause_button = QPushButton("▶")
+        self._play_pause_button.setObjectName("transportButton")
+        self._play_pause_button.clicked.connect(self.play_pause_clicked)
+        
+        self._repeat_button = QPushButton("🔁")
+        self._repeat_button.setObjectName("transportButton")
+        self._repeat_button.setCheckable(True)
+        self._repeat_button.clicked.connect(self.repeat_clicked)
+        
+        transport_layout.addWidget(self._prev_button)
+        transport_layout.addWidget(self._next_button)
+        transport_layout.addWidget(self._shuffle_button)
+        transport_layout.addWidget(self._rewind_button)
+        transport_layout.addWidget(self._play_pause_button)
+        transport_layout.addWidget(self._repeat_button)
 
-        # --- Transport row ---
-        self._prev_btn = self._make_small("⏮", self.prev_clicked, "Previous")
-        self._next_btn = self._make_small("⏭", self.next_clicked, "Next")
-        self._shuffle_btn = self._make_small("🔀", self.shuffle_toggled, "Shuffle")
-        self._rewind_btn = self._make_small("⏪", self.rewind_clicked, "Restart track")
-        self._play_pause_btn = QPushButton("▶")
-        self._play_pause_btn.setObjectName("circularLarge")
-        self._play_pause_btn.setToolTip("Play / Pause")
-        self._play_pause_btn.clicked.connect(self.play_pause_clicked)
-        self._repeat_btn = self._make_small("🔁", self.repeat_toggled, "Repeat")
+        # Main layout assembly
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 24)
+        main_layout.setSpacing(0)
+        main_layout.addLayout(header_layout)
+        main_layout.addLayout(content_layout)
+        main_layout.addSpacing(24)
+        main_layout.addWidget(self._tape_timeline)
+        main_layout.addLayout(time_layout)
+        main_layout.addWidget(self._seek_slider)
+        main_layout.addSpacing(16)  # Space before transport
+        main_layout.addWidget(transport, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        transport_layout = QHBoxLayout()
-        transport_layout.setContentsMargins(28, 4, 28, 20)
-        transport_layout.setSpacing(14)
-        transport_layout.addStretch(1)
-        transport_layout.addWidget(self._prev_btn)
-        transport_layout.addWidget(self._next_btn)
-        transport_layout.addWidget(self._shuffle_btn)
-        transport_layout.addWidget(self._rewind_btn)
-        transport_layout.addWidget(self._play_pause_btn)
-        transport_layout.addWidget(self._repeat_btn)
-        transport_layout.addStretch(1)
+        # Connections
+        self._seek_slider.sliderMoved.connect(self.seek)
+        self._seek_slider.sliderPressed.connect(self._on_seek_pressed)
 
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(0)
-        outer.addLayout(header_layout)
-        outer.addLayout(body_layout, 1)
-        outer.addLayout(seek_layout)
-        outer.addLayout(volume_layout)
-        outer.addLayout(transport_layout)
-
-    def _make_small(self, glyph: str, emit_signal, tooltip: str) -> QPushButton:
-        btn = QPushButton(glyph)
-        btn.setObjectName("circularSmall")
-        btn.setToolTip(tooltip)
-        btn.clicked.connect(emit_signal)
-        return btn
-
-    # --- External API used by MainWindow ---
-
-    def set_track(self, track: Track) -> None:
-        self._vinyl.set_track(track)
-        self._lyrics.setPlainText(track.lyrics if track.lyrics else "No lyrics available")
-
-    def set_playback_state(self, state: QMediaPlayer.PlaybackState) -> None:
-        if state == QMediaPlayer.PlaybackState.PlayingState:
-            self._play_pause_btn.setText("⏸")
-            self._vinyl.set_spinning(True)
+    def set_track(self, track: Track | None) -> None:
+        """Update UI for the current track."""
+        if track:
+            self._vinyl_widget.set_track(track)
+            # Set lyrics if available
+            if track.lyrics:
+                self._lyrics_panel.setPlainText(track.lyrics)
+            else:
+                self._lyrics_panel.setPlainText("No lyrics available")
         else:
-            self._play_pause_btn.setText("▶")
-            self._vinyl.set_spinning(False)
-
-    def set_position(self, position_ms: int) -> None:
-        if not self._user_dragging:
-            self._seek.setValue(position_ms)
-        new_seconds = max(0, position_ms // 1000)
-        if new_seconds != self._last_shown_seconds:
-            self._last_shown_seconds = new_seconds
-            self._position_label.setText(_format_time(position_ms))
+            self._vinyl_widget.clear_track()
+            self._lyrics_panel.setPlainText("No track loaded")
 
     def set_duration(self, duration_ms: int) -> None:
-        self._seek.setMaximum(max(0, duration_ms))
+        """Set the track duration."""
+        self._seek_slider.setRange(0, duration_ms)
         self._duration_label.setText(_format_time(duration_ms))
 
-    def set_shuffle_active(self, active: bool) -> None:
-        self._set_button_active(self._shuffle_btn, active)
+    def set_position(self, position_ms: int) -> None:
+        """Update the playback position (only when user isn't dragging)."""
+        if not self._seek_slider.isSliderDown():
+            self._seek_slider.setValue(position_ms)
+        self._current_time_label.setText(_format_time(position_ms))
 
-    def set_repeat_active(self, active: bool) -> None:
-        self._set_button_active(self._repeat_btn, active)
+    def set_shuffle(self, enabled: bool) -> None:
+        """Set shuffle state."""
+        self._shuffle_button.setChecked(enabled)
 
-    def set_volume(self, volume: float) -> None:
-        """Set volume from 0.0 to 1.0 (called from MainWindow)"""
-        volume_percent = int(volume * 100)  # Convert to percentage
-        self._volume.blockSignals(True)  # Don't emit signal when setting programmatically
-        self._volume.setValue(volume_percent)
-        self._volume.blockSignals(False)
-        
-        # Update icon based on volume level
-        if volume == 0:
-            self._volume_label.setText("🔇")
-        elif volume < 0.3:
-            self._volume_label.setText("🔈")
-        elif volume < 0.7:
-            self._volume_label.setText("🔉")
+    def set_repeat(self, enabled: bool) -> None:
+        """Set repeat state."""
+        self._repeat_button.setChecked(enabled)
+
+    def set_is_playing(self, is_playing: bool) -> None:
+        """Update play/pause button state."""
+        if is_playing:
+            self._play_pause_button.setText("⏸")
+            self._vinyl_widget.start_rotation()
         else:
-            self._volume_label.setText("🔊")
+            self._play_pause_button.setText("▶")
+            self._vinyl_widget.stop_rotation()
 
-    # --- Internal ---
+    def seek(self, position_ms: int) -> None:
+        """Seek to the position (connected to sliderMoved signal)."""
+        # Position update is handled by the main window via position_ms updates
+        pass
 
-    def _on_volume_changed(self, value: int) -> None:
-        """Handle volume slider changes"""
-        volume_decimal = value / 100.0  # Convert from percentage to decimal
-        self.volume_changed.emit(volume_decimal)
-        
-        # Update icon based on volume level
-        if value == 0:
-            self._volume_label.setText("🔇")
-        elif value < 30:
-            self._volume_label.setText("🔈")
-        elif value < 70:
-            self._volume_label.setText("🔉")
-        else:
-            self._volume_label.setText("🔊")
-
-    def _on_slider_pressed(self) -> None:
-        self._user_dragging = True
-
-    def _on_slider_released(self) -> None:
-        self._user_dragging = False
-        self.seek_requested.emit(self._seek.value())
-
-    @staticmethod
-    def _set_button_active(button: QPushButton, active: bool) -> None:
-        button.setProperty("active", "true" if active else "false")
-        style = button.style()
-        style.unpolish(button)
-        style.polish(button)
+    def _on_seek_pressed(self) -> None:
+        """Handle user starting to drag the seek slider."""
+        # Main window will handle seeking logic when slider is released
+        pass

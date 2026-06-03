@@ -1,12 +1,8 @@
-"""Rotating vinyl widget for the Now Playing screen.
+"""Rotating vinyl widget for the Now Playing screen - enhanced for 2000s aesthetic.
 
 Draws a dark vinyl disc with concentric groove rings, the album art
-clipped into a center label, and the track title / artist as curved
-text along the top and bottom arcs of the label. The entire painter
-is rotated by `self._angle` so everything spins together — matching
-how a real vinyl label rotates with the disc.
-
-Rotation: ~8 seconds per full turn at 30 FPS → 1.5° per frame.
+clipped into a center label, and improved curved text along the label perimeter.
+Enhanced spinning animation and golden-yellow theming.
 """
 
 from __future__ import annotations
@@ -17,10 +13,12 @@ from PySide6.QtCore import QPointF, QRectF, Qt, QTimer
 from PySide6.QtGui import (
     QColor,
     QFont,
+    QFontMetrics,
     QPainter,
     QPainterPath,
     QPen,
     QPixmap,
+    QTransform,
 )
 from PySide6.QtWidgets import QWidget
 
@@ -35,6 +33,9 @@ class VinylWidget(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setMinimumSize(280, 280)
+        self.setObjectName("vinylWidget")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        
         self._angle: float = 0.0
         self._album_pixmap: QPixmap | None = None
         self._title: str = ""
@@ -45,131 +46,200 @@ class VinylWidget(QWidget):
         self._timer.timeout.connect(self._on_tick)
 
     def set_track(self, track: Track) -> None:
+        """Load track information and album art."""
         self._title = track.title or ""
         self._artist = track.artist or ""
         self._album_pixmap = None
-        if track.album_art_data:
-            pix = QPixmap()
-            if pix.loadFromData(track.album_art_data) and not pix.isNull():
-                self._album_pixmap = pix
+        
+        if track.album_art_data and track.album_art_mime:
+            # Load album art from binary data
+            pixmap = QPixmap()
+            if pixmap.loadFromData(track.album_art_data, track.album_art_mime):
+                self._album_pixmap = pixmap
+
         self.update()
 
-    def set_spinning(self, spinning: bool) -> None:
-        if spinning and not self._timer.isActive():
+    def clear_track(self) -> None:
+        """Clear current track data."""
+        self._title = ""
+        self._artist = ""
+        self._album_pixmap = None
+        self.update()
+
+    def start_rotation(self) -> None:
+        """Begin spinning animation."""
+        if not self._timer.isActive():
             self._timer.start()
-        elif not spinning and self._timer.isActive():
-            self._timer.stop()
 
-    def _on_tick(self) -> None:
-        self._angle = (self._angle + DEGREES_PER_FRAME) % 360.0
-        self.update()
+    def stop_rotation(self) -> None:
+        """Halt spinning animation."""
+        self._timer.stop()
 
-    def paintEvent(self, event) -> None:  # noqa: ARG002
+    def paintEvent(self, event) -> None:
+        """Main painting method - draws the complete vinyl assembly."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        side = min(self.width(), self.height())
-        cx = self.width() / 2.0
-        cy = self.height() / 2.0
-        vinyl_radius = side / 2.0 - 6.0
-        label_radius = vinyl_radius * 0.42
+        # Apply rotation to the entire vinyl disc
+        center = QPointF(self.width() / 2, self.height() / 2)
+        painter.translate(center)
+        painter.rotate(-self._angle)  # Negative for clockwise rotation
+        painter.translate(-center)
 
-        painter.translate(cx, cy)
-        painter.rotate(self._angle)
+        # Draw vinyl disc
+        self._draw_vinyl_disc(painter)
 
-        # Vinyl disc
+        # Draw center label with album art
+        self._draw_center_label(painter)
+
+        # Draw curved text on the label perimeter
+        self._draw_curved_text(painter)
+
+    def _draw_vinyl_disc(self, painter: QPainter) -> None:
+        """Draw the dark vinyl disc with concentric grooves."""
+        rect = self.rect()
+        disc_radius = min(rect.width(), rect.height()) // 2 - 20
+        
+        # Dark vinyl color
+        disc_color = QColor(26, 15, 8)  # Deep brown-black
+        painter.setBrush(disc_color)
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#1a1a1a"))
-        painter.drawEllipse(QPointF(0, 0), vinyl_radius, vinyl_radius)
-
-        # Subtle concentric grooves
-        groove_pen = QPen(QColor(255, 255, 255, 14))
-        groove_pen.setWidth(1)
+        painter.drawEllipse(rect.center(), disc_radius, disc_radius)
+        
+        # Draw concentric groove rings
+        groove_color = QColor(40, 25, 15)
+        groove_pen = QPen(groove_color, 1)
         painter.setPen(groove_pen)
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        groove_start = int(label_radius) + 8
-        for r in range(groove_start, int(vinyl_radius) - 2, 4):
-            painter.drawEllipse(QPointF(0, 0), float(r), float(r))
+        
+        # Inner grooves
+        for radius in range(disc_radius - 20, 70, -8):
+            painter.drawEllipse(rect.center(), radius, radius)
 
-        # Album label area
-        if self._album_pixmap is not None:
-            painter.save()
-            clip = QPainterPath()
-            clip.addEllipse(QPointF(0, 0), label_radius, label_radius)
-            painter.setClipPath(clip)
-            target = QRectF(
-                -label_radius, -label_radius, label_radius * 2, label_radius * 2
+    def _draw_center_label(self, painter: QPainter) -> None:
+        """Draw the center label area with album art or placeholder."""
+        center = QPointF(self.width() / 2, self.height() / 2)
+        label_radius = 60
+        
+        # Label background
+        label_color = QColor(212, 196, 145)  # Golden label color
+        painter.setBrush(label_color)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(center, label_radius, label_radius)
+        
+        # Inner ring detail
+        ring_pen = QPen(QColor(139, 69, 19), 2)  # Brown ring
+        painter.setPen(ring_pen)
+        painter.drawEllipse(center, label_radius - 5, label_radius - 5)
+        
+        # Album art or placeholder
+        if self._album_pixmap:
+            # Scale and crop album art to fit the label circle
+            square_size = label_radius * 2 - 20  # Leave margin for ring
+            scaled_art = self._album_pixmap.scaled(
+                square_size, square_size,
+                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.TransformationMode.SmoothTransformation
             )
-            painter.drawPixmap(
-                target, self._album_pixmap, QRectF(self._album_pixmap.rect())
+            
+            # Create circular clip
+            art_rect = QRectF(
+                center.x() - square_size // 2,
+                center.y() - square_size // 2,
+                square_size,
+                square_size
             )
-            painter.restore()
+            painter.setClipPath(self._create_circle_path(center, label_radius - 10))
+            painter.drawPixmap(art_rect, scaled_art, scaled_art.rect())
+            painter.setClipRect(self.rect())  # Reset clipping
         else:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#3a3a3a"))
-            painter.drawEllipse(QPointF(0, 0), label_radius, label_radius)
-            painter.setBrush(QColor("#1a1a1a"))
-            painter.drawEllipse(QPointF(0, 0), label_radius * 0.18, label_radius * 0.18)
+            # Placeholder "Original" text or icon
+            placeholder_color = QColor(90, 74, 58)
+            painter.setPen(placeholder_color)
+            font = QFont("SF Pro Display", 14, QFont.Weight.Bold)
+            painter.setFont(font)
+            painter.drawText(center, "Original")
 
-        # Curved text between label and outer edge
-        text_radius = (vinyl_radius + label_radius) / 2.0
-        text_font = QFont()
-        text_font.setPointSize(max(8, int(label_radius * 0.13)))
-        text_font.setBold(True)
-        painter.setFont(text_font)
-        self._draw_curved_text(painter, self._title, text_radius, on_top=True)
-        self._draw_curved_text(painter, self._artist, text_radius, on_top=False)
+    def _draw_curved_text(self, painter: QPainter) -> None:
+        """Draw title and artist curved along the label perimeter."""
+        center = QPointF(self.width() / 2, self.height() / 2)
+        text_radius = 75  # Radius where curved text appears
+        
+        text_color = QColor(90, 74, 58)
+        painter.setPen(text_color)
+        font = QFont("SF Pro Display", 11, QFont.Weight.Medium)
+        painter.setFont(font)
+        
+        # Title on top arc
+        if self._title:
+            self._draw_curved_text_line(painter, center, text_radius, self._title, 0)
+        
+        # Artist on bottom arc  
+        if self._artist:
+            self._draw_curved_text_line(painter, center, text_radius, self._artist, 180)
 
-    def _draw_curved_text(
-        self,
-        painter: QPainter,
-        text: str,
-        radius: float,
-        on_top: bool,
-    ) -> None:
-        if not text or radius <= 0:
+    def _draw_curved_text_line(self, painter: QPainter, center: QPointF, radius: float, 
+                              text: str, start_angle: float) -> None:
+        """Draw a single line of text curved around a circle."""
+        font_metrics = QFontMetrics(painter.font())
+        
+        # Check if text fits; if too long, truncate
+        max_arc_length = math.pi * radius  # Half circle max
+        text_width = font_metrics.horizontalAdvance(text)
+        
+        if text_width > max_arc_length and len(text) > 8:
+            # Truncate with ellipsis
+            while text and font_metrics.horizontalAdvance(text + "...") > max_arc_length:
+                text = text[:-1]
+            text += "..."
+        
+        if not text:
             return
-        fm = painter.fontMetrics()
-        total_width = fm.horizontalAdvance(text)
-        if total_width <= 0:
-            return
-        # Cap text arc to half the circle so it doesn't wrap into itself
-        max_arc_rad = math.pi * 0.85
-        total_arc_rad = min(total_width / radius, max_arc_rad)
-        total_arc_deg = math.degrees(total_arc_rad)
-
-        if on_top:
-            # Top of circle in Qt coords is angle -90°; left to right = increasing angle
-            center_angle_deg = -90.0
-            start_angle_deg = center_angle_deg - total_arc_deg / 2.0
-            direction = 1.0
-            tangent_offset_deg = 90.0
-        else:
-            # Bottom of circle is +90°; left to right (viewer) = decreasing angle
-            center_angle_deg = 90.0
-            start_angle_deg = center_angle_deg + total_arc_deg / 2.0
-            direction = -1.0
-            tangent_offset_deg = -90.0
-
-        # Scale per-char arc so the full text fits the capped arc
-        per_char_scale = total_arc_rad / (total_width / radius) if total_width > 0 else 1.0
-        current_angle_deg = start_angle_deg
-        painter.setPen(QColor("white"))
-
-        for ch in text:
-            ch_width = fm.horizontalAdvance(ch)
-            ch_arc_rad = (ch_width / radius) * per_char_scale
-            ch_arc_deg = math.degrees(ch_arc_rad)
-            ch_center_deg = current_angle_deg + direction * ch_arc_deg / 2.0
-
-            rad = math.radians(ch_center_deg)
-            x = radius * math.cos(rad)
-            y = radius * math.sin(rad)
-
+            
+        # Calculate angle per character
+        chars = list(text)
+        total_width = font_metrics.horizontalAdvance(text)
+        angle_per_char = math.degrees(total_width / radius)
+        
+        # Calculate starting angle to center the text
+        if start_angle == 0:  # Top arc
+            current_angle = -angle_per_char / 2
+        else:  # Bottom arc  
+            current_angle = 180 - angle_per_char / 2
+        
+        # Draw each character
+        for i, char in enumerate(chars):
+            if i > 0:
+                char_width = font_metrics.horizontalAdvance(chars[i-1])
+                current_angle += math.degrees(char_width / radius)
+            
+            # Position and rotate character
+            char_angle_rad = math.radians(current_angle)
+            char_x = center.x() + radius * math.cos(char_angle_rad)
+            char_y = center.y() + radius * math.sin(char_angle_rad)
+            
+            # Save painter state and apply rotation
             painter.save()
-            painter.translate(x, y)
-            painter.rotate(ch_center_deg + tangent_offset_deg)
-            painter.drawText(QPointF(-ch_width / 2.0, 0.0), ch)
+            painter.translate(char_x, char_y)
+            
+            # Rotate text to be upright relative to center
+            if start_angle == 0:  # Top arc - text tangent to circle
+                painter.rotate(current_angle + 90)
+            else:  # Bottom arc - text tangent but inverted
+                painter.rotate(current_angle - 90)
+            
+            # Draw character
+            painter.drawText(QPointF(-font_metrics.horizontalAdvance(char) // 2, 0), char)
             painter.restore()
 
-            current_angle_deg += direction * ch_arc_deg
+    def _create_circle_path(self, center: QPointF, radius: float) -> QPainterPath:
+        """Helper to create a circular clipping path."""
+        path = QPainterPath()
+        path.addEllipse(center, radius, radius)
+        return path
+
+    def _on_tick(self) -> None:
+        """Animation timer callback."""
+        self._angle += DEGREES_PER_FRAME
+        if self._angle >= 360.0:
+            self._angle -= 360.0
+        self.update()

@@ -1,149 +1,224 @@
 """Centralized Qt stylesheet for the Spool UI.
 
 Applied at the QMainWindow level so all child widgets inherit.
-Colors come from the redesign spec: near-black chrome, warm gold content,
-dark circular buttons with white glyphs.
+Updated to 2000s golden-yellow aesthetic per UI specifications.
 """
 
 APP_STYLESHEET = """
 QMainWindow {
-    background-color: #1a1a1a;
+    background-color: #2a2118;
 }
 
 QWidget#darkFrame {
-    background-color: #1a1a1a;
+    background-color: #2a2118;
 }
 
 QWidget#contentPanel {
-    background-color: #D4B483;
+    background-color: #e6d5a8;
 }
 
-QLabel#title {
-    color: #1a1a1a;
+/* Header styling */
+QLabel#headerLabel {
+    color: #5a4a3a;
     font-size: 28px;
     font-weight: bold;
+    font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
 }
 
-QLabel#subtitle {
-    color: #5a4a30;
-    font-size: 12px;
+/* Library view table */
+QTableView {
+    background-color: #e6d5a8;
+    border: none;
+    gridline-color: #d4c491;
+    selection-background-color: #d4c491;
 }
 
-QLabel#timeLabel {
-    color: #1a1a1a;
-    font-size: 11px;
+QTableView::item {
+    padding: 12px;
+    border: none;
+    color: #5a4a3a;
 }
 
-QPushButton#circularSmall {
-    background-color: #1a1a1a;
-    color: white;
-    border: 2px solid transparent;
-    border-radius: 20px;
+QTableView::item:selected {
+    background-color: #d4c491;
+}
+
+/* Album column delegate - thumbnail above name */
+QLabel#albumThumbnail {
+    background-color: #f0e6d3;
+    border: 2px solid #d4c491;
+}
+
+/* Circular buttons for header controls */
+QPushButton#circularButton {
+    background-color: #5a4a3a;
+    border: 2px solid #7a6a5a;
+    border-radius: 18px;
     min-width: 36px;
     min-height: 36px;
     max-width: 36px;
     max-height: 36px;
-    font-size: 14px;
+    color: #e6d5a8;
+    font-size: 18px;
 }
 
-QPushButton#circularSmall:hover {
-    background-color: #2c2c2c;
+QPushButton#circularButton:hover {
+    background-color: #7a6a5a;
+    border-color: #8a7a6a;
 }
 
-QPushButton#circularSmall[active="true"] {
-    border: 2px solid #f0d090;
+QPushButton#circularButton:pressed {
+    background-color: #4a3a2a;
 }
 
-QPushButton#circularLarge {
-    background-color: #1a1a1a;
-    color: white;
-    border: 2px solid transparent;
-    border-radius: 28px;
-    min-width: 52px;
-    min-height: 52px;
-    max-width: 52px;
-    max-height: 52px;
+/* Home button for expanded view */
+QPushButton#homeButton {
+    background-color: #5a4a3a;
+    border: 2px solid #7a6a5a;
+    border-radius: 20px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    color: #e6d5a8;
     font-size: 20px;
 }
 
-QPushButton#circularLarge:hover {
-    background-color: #2c2c2c;
+QPushButton#homeButton:hover {
+    background-color: #7a6a5a;
 }
 
-QTableView {
-    background-color: #D4B483;
-    color: #1a1a1a;
-    border: none;
-    gridline-color: rgba(26, 26, 26, 40);
-    selection-background-color: #b89968;
-    selection-color: #1a1a1a;
+/* vinyl widget styling */
+QWidget#vinylWidget {
+    background-color: #2a2118;
 }
 
-QHeaderView::section {
-    background-color: #c8a878;
-    color: #1a1a1a;
-    border: none;
-    padding: 6px;
-    font-weight: bold;
+QLabel#vinylDisc {
+    background-color: #1a0f08;
+    border-radius: 150px;
 }
 
-QTextEdit#lyrics {
-    background-color: #D4B483;
-    color: #1a1a1a;
-    border: none;
-    font-size: 13px;
+QLabel#vinylLabel {
+    background-color: #d4c491;
+    border-radius: 60px;
 }
 
-QTextEdit#lyrics QWidget {
-    background-color: #D4B483;
+QLabel#vinylText {
+    color: #5a4a3a;
+    font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
 }
 
-QSlider#seekBar::groove:horizontal {
-    height: 4px;
-    background: #8a7050;
-    border-radius: 2px;
+/* Lyrics panel */
+QTextEdit#lyricsPanel {
+    background-color: #e6d5a8;
+    border: 2px solid #d4c491;
+    color: #5a4a3a;
+    font-family: 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    padding: 16px;
 }
 
-QSlider#seekBar::handle:horizontal {
-    background: #1a1a1a;
+QTextEdit#lyricsPanel QScrollBar:vertical {
+    background-color: #d4c491;
     width: 12px;
-    margin: -5px 0;
     border-radius: 6px;
 }
 
-QSlider#seekBar::sub-page:horizontal {
-    background: #1a1a1a;
-    border-radius: 2px;
+QTextEdit#lyricsPanel QScrollBar::handle:vertical {
+    background-color: #7a6a5a;
+    min-height: 20px;
+    border-radius: 6px;
 }
 
-/* Volume slider styling */
-QLabel#volumeLabel {
-    color: #1a1a1a;
-    font-size: 16px;
+/* Seek bar */
+QSlider#seekBar {
+    background-color: transparent;
+}
+
+QSlider#seekBar::groove:horizontal {
+    background-color: #d4c491;
+    height: 8px;
+    border-radius: 4px;
+}
+
+QSlider#seekBar::handle:horizontal {
+    background-color: #5a4a3a;
+    border: 2px solid #7a6a5a;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    margin: -6px 0;
+}
+
+/* Time labels */
+QLabel#timeLabel {
+    color: #5a4a3a;
+    font-family: 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+}
+
+/* Transport controls - rectangular footer */
+QWidget#transportWidget {
+    background-color: #5a4a3a;
+    border-radius: 8px;
+}
+
+QPushButton#transportButton {
+    background-color: #2a2118;
+    border: none;
+    border-radius: 4px;
+    min-width: 50px;
+    min-height: 40px;
+    max-width: 70px;
+    color: #e6d5a8;
+    font-size: 18px;
+    font-family: 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+}
+
+QPushButton#transportButton:hover {
+    background-color: #3a2a18;
+}
+
+QPushButton#transportButton:pressed {
+    background-color: #1a0a08;
+}
+
+QPushButton#transportButton[toggled="true"] {
+    border: 2px solid #e6d5a8;
+}
+
+/* Volume slider */
+QSlider#volumeSlider {
+    background-color: transparent;
 }
 
 QSlider#volumeSlider::groove:horizontal {
+    background-color: #d4c491;
     height: 6px;
-    background: #8a7050;
     border-radius: 3px;
-    margin: 0 8px;
 }
 
 QSlider#volumeSlider::handle:horizontal {
-    background: #1a1a1a;
+    background-color: #5a4a3a;
+    border: 1px solid #7a6a5a;
     width: 16px;
     height: 16px;
-    margin: -8px 0;
     border-radius: 8px;
-    border: 2px solid #f0d090;
+    margin: -5px 0;
 }
 
-QSlider#volumeSlider::sub-page:horizontal {
-    background: #1a1a1a;
-    border-radius: 3px;
+/* Import dialog styling */
+QFileDialog {
+    background-color: #e6d5a8;
 }
 
-QSlider#volumeSlider:hover::handle:horizontal {
-    border-color: #f0e0b0;
+QFileDialog QHeaderView::section {
+    background-color: #5a4a3a;
+    color: #e6d5a8;
+}
+
+QFileDialog QListView::item:selected {
+    background-color: #d4c491;
+    color: #5a4a3a;
 }
 """
