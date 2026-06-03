@@ -2,15 +2,15 @@
 
 
 a = Analysis(
-    ['src/spool/main.py'],
+    ['src\\spool\\main.py'],
     pathex=[],
     binaries=[],
     datas=[('src', 'src')],
-    hiddenimports=[],
+    hiddenimports=['PySide6.QtMultimedia', 'PySide6.QtMultimediaWidgets'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['matplotlib', 'tkinter', 'numpy'],
     noarchive=False,
     optimize=0,
 )
@@ -35,5 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets/spool-icon.png'],
+    icon=['assets\\spool-icon.png'],
 )
