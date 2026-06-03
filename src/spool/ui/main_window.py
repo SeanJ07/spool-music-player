@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         nps.volume_changed.connect(self._on_volume_changed)
 
         player = self._controller.player
-        player.playbackStateChanged.connect(nps.set_playback_state)
+        player.playbackStateChanged.connect(nps.set_is_playing)
         player.positionChanged.connect(nps.set_position)
         player.durationChanged.connect(nps.set_duration)
         player.mediaStatusChanged.connect(self._on_media_status)
