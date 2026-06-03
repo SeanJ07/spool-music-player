@@ -1,0 +1,13 @@
+
+To create a desktop shortcut for Spool:
+
+1. Right-click on your desktop
+2. Select 'New' > 'Shortcut'
+3. Click 'Browse' and navigate to:
+   C:\Users\YourUsername\Path\To\spool-music-player\dist\windows\Spool.exe
+4. Click 'Next'
+5. Type 'Spool' as the name
+6. Click 'Finish'
+7. Double-click the shortcut to launch Spool!
+
+Or simply double-click 'Start Spool.bat' in the project folder.

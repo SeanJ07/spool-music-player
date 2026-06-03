@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['/mnt/c/Users/seanj/Documents/Github/spool-music-player/src/spool/main.py'],
+    ['src/spool/main.py'],
     pathex=[],
     binaries=[],
-    datas=[('/mnt/c/Users/seanj/Documents/Github/spool-music-player/src', 'src')],
+    datas=[('src', 'src')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -35,6 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    version='version_info.txt',
-    icon=['/mnt/c/Users/seanj/Documents/Github/spool-music-player/assets/spool-icon.png'],
+    icon=['assets/spool-icon.png'],
 )
