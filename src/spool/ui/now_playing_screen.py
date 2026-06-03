@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
     QWidget,
+    QListWidget,
+    QListWidgetItem,
 )
 from PySide6.QtGui import QPainter, QPainterPath, QPen, QColor, QFont
 
@@ -86,6 +88,7 @@ class NowPlayingScreen(QWidget):
     seek_back_clicked = Signal()
     seek_requested = Signal(int)
     volume_changed = Signal(float)
+    view_toggled = Signal(str)  # "lyrics" or "queue"
 
     def __init__(self) -> None:
         super().__init__()
@@ -113,15 +116,58 @@ class NowPlayingScreen(QWidget):
         self._vinyl_widget = VinylWidget()
         self._vinyl_widget.setFixedSize(280, 280)
         
-        # Lyrics panel on the right
+        # Dynamic content area (Lyrics/Queue toggle)
+        self._content_widget = QWidget()
+        self._content_layout = QVBoxLayout(self._content_widget)
+        self._content_layout.setContentsMargins(0, 0, 0, 0)
+        self._content_layout.setSpacing(8)
+        
+        # Toggle button for Lyrics/Queue view
+        self._toggle_button = QPushButton("📝 Lyrics")
+        self._toggle_button.setObjectName("circularButton")
+        self._toggle_button.clicked.connect(self._on_view_toggled)
+        self._toggle_button.setFixedSize(80, 36)
+        
+        # Queue panel for upcoming tracks
+        self._queue_panel = QListWidget()
+        self._queue_panel.setObjectName("queuePanel")
+        self._queue_panel.setFixedSize(320, 230)
+        
+        # Style queue panel to match the aesthetic
+        self._queue_panel.setStyleSheet("""
+            QListWidget#queuePanel {
+                background-color: #e6d5a8;
+                border: 2px solid #d4c491;
+                color: #5a4a3a;
+                font-family: 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+                font-size: 14px;
+            }
+            QListWidget::item {
+                padding: 8px;
+                border-bottom: 1px solid #d4c491;
+            }
+            QListWidget::item:selected {
+                background-color: #d4c491;
+            }
+        """)
+        
+        # Lyrics panel
         self._lyrics_panel = QTextEdit()
         self._lyrics_panel.setObjectName("lyricsPanel")
         self._lyrics_panel.setReadOnly(True)
         self._lyrics_panel.setPlainText("No lyrics available")
-        self._lyrics_panel.setFixedSize(320, 280)
+        self._lyrics_panel.setFixedSize(320, 230)
+        
+        # Initially show lyrics, hide queue
+        self._queue_panel.hide()
+        
+        # Add widgets to content layout
+        self._content_layout.addWidget(self._toggle_button)
+        self._content_layout.addWidget(self._lyrics_panel)
+        self._content_layout.addWidget(self._queue_panel)
         
         content_layout.addWidget(self._vinyl_widget, alignment=Qt.AlignmentFlag.AlignCenter)
-        content_layout.addWidget(self._lyrics_panel)
+        content_layout.addWidget(self._content_widget)
 
         # Tape-spool timeline
         self._tape_timeline = TapeSpoolTimeline()
@@ -189,6 +235,16 @@ class NowPlayingScreen(QWidget):
         transport_layout.addWidget(self._rewind_button)
         transport_layout.addWidget(self._play_pause_button)
         transport_layout.addWidget(self._repeat_button)
+        
+        # Volume slider
+        transport_layout.addStretch()
+        self._volume_slider = QSlider(Qt.Orientation.Horizontal)
+        self._volume_slider.setObjectName("volumeSlider")
+        self._volume_slider.setRange(0, 100)
+        self._volume_slider.setValue(70)
+        self._volume_slider.setFixedSize(80, 20)
+        self._volume_slider.valueChanged.connect(self._on_volume_changed)
+        transport_layout.addWidget(self._volume_slider)
 
         # Main layout assembly
         main_layout = QVBoxLayout(self)
@@ -271,5 +327,33 @@ class NowPlayingScreen(QWidget):
 
     def set_volume(self, volume: float) -> None:
         """Set volume from external source (like main window)."""
-        # This will be implemented when volume control is added
-        pass
+        # Convert 0.0-1.0 range to 0-100 slider range
+        volume_percent = int(volume * 100)
+        self._volume_slider.setValue(volume_percent)
+    
+    def _on_view_toggled(self) -> None:
+        """Toggle between lyrics and queue view."""
+        if self._lyrics_panel.isVisible():
+            # Show queue, hide lyrics
+            self._lyrics_panel.hide()
+            self._queue_panel.show()
+            self._toggle_button.setText("📋 Queue")
+            self.view_toggled.emit("queue")
+        else:
+            # Show lyrics, hide queue
+            self._queue_panel.hide()
+            self._lyrics_panel.show()
+            self._toggle_button.setText("📝 Lyrics")
+            self.view_toggled.emit("lyrics")
+    
+    def _on_volume_changed(self, volume_percent: int) -> None:
+        """Handle volume slider change."""
+        volume_float = volume_percent / 100.0
+        self.volume_changed.emit(volume_float)
+    
+    def update_queue(self, tracks: list) -> None:
+        """Update the queue panel with upcoming tracks."""
+        self._queue_panel.clear()
+        for track in tracks:
+            item = QListWidgetItem(f"{track.title} - {track.artist}")
+            self._queue_panel.addItem(item)

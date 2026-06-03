@@ -90,6 +90,7 @@ class MainWindow(QMainWindow):
         nps.repeat_toggled.connect(self._on_repeat)
         nps.seek_requested.connect(self._controller.player.setPosition)
         nps.volume_changed.connect(self._on_volume_changed)
+        nps.view_toggled.connect(self._on_view_toggled)
 
         player = self._controller.player
         player.playbackStateChanged.connect(nps.set_is_playing)
@@ -169,8 +170,15 @@ class MainWindow(QMainWindow):
         self._controller.play(track)
 
     def _on_volume_changed(self, volume: float) -> None:
-        """Handle volume slider changes"""
+        """Handle volume changes from the UI."""
         self._controller.set_volume(volume)
+    
+    def _on_view_toggled(self, view_type: str) -> None:
+        """Handle toggle between lyrics and queue view."""
+        if view_type == "queue":
+            # Update the now playing screen with current queue
+            queue_tracks = self._queue.get_upcoming_tracks()
+            self._now_playing_screen.update_queue(queue_tracks)
 
     def _on_player_error(
         self, error: QMediaPlayer.Error, error_string: str

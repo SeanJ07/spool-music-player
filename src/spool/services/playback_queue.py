@@ -73,3 +73,12 @@ class PlaybackQueue:
     def toggle_repeat(self) -> bool:
         self._repeat = not self._repeat
         return self._repeat
+
+    def get_upcoming_tracks(self) -> list[Track]:
+        """Get tracks in order for display (showing upcoming tracks first)."""
+        if self._current_index < 0 or self._current_index >= len(self._tracks):
+            return self._tracks.copy()
+        
+        # Return current and upcoming tracks first, then wrap around
+        upcoming = self._tracks[self._current_index:] + self._tracks[:self._current_index]
+        return upcoming
