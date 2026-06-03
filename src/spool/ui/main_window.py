@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
         nps.prev_clicked.connect(self._on_prev)
         nps.next_clicked.connect(self._on_next)
         nps.shuffle_toggled.connect(self._on_shuffle)
-        nps.rewind_clicked.connect(self._on_rewind)
+        nps.seek_back_clicked.connect(self._on_rewind)
         nps.repeat_toggled.connect(self._on_repeat)
         nps.seek_requested.connect(self._controller.player.setPosition)
         nps.volume_changed.connect(self._on_volume_changed)
