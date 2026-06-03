@@ -204,9 +204,7 @@ class NowPlayingScreen(QWidget):
         main_layout.addWidget(transport, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Connections
-        self._seek_slider.sliderMoved.connect(self._on_seek_moved)
-        self._seek_slider.sliderReleased.connect(self._on_seek_released)
-        self._seek_slider.sliderPressed.connect(self._on_seek_pressed)
+        self._seek_slider.sliderReleased.connect(self._on_released)
         
         # Shuffle button toggle handling
         self._shuffle_button.toggled.connect(self._on_shuffle_toggled)
@@ -258,10 +256,10 @@ class NowPlayingScreen(QWidget):
         # Emit seek requested for main window to handle
         self.seek_requested.emit(position_ms)
 
-    def _on_seek_pressed(self) -> None:
-        """Handle user starting to drag the seek slider."""
-        # Main window will handle seeking logic when slider is released
-        pass
+    def _on_released(self) -> None:
+        """Handle seek slider release - perform actual seek."""
+        position_ms = self._seek_slider.value()
+        self.seek_requested.emit(position_ms)
     
     def _on_shuffle_toggled(self, checked: bool) -> None:
         """Handle shuffle toggle state change."""
