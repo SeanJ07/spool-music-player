@@ -80,8 +80,12 @@ class NowPlayingScreen(QWidget):
     prev_clicked = Signal()
     next_clicked = Signal()
     shuffle_clicked = Signal()
+    shuffle_toggled = Signal(bool)
     repeat_clicked = Signal()
+    repeat_toggled = Signal(bool)
     seek_back_clicked = Signal()
+    seek_requested = Signal(int)
+    volume_changed = Signal(float)
 
     def __init__(self) -> None:
         super().__init__()
@@ -200,8 +204,13 @@ class NowPlayingScreen(QWidget):
         main_layout.addWidget(transport, alignment=Qt.AlignmentFlag.AlignCenter)
 
         # Connections
-        self._seek_slider.sliderMoved.connect(self.seek)
+        self._seek_slider.sliderMoved.connect(self._on_seek_moved)
+        self._seek_slider.sliderReleased.connect(self._on_seek_released)
         self._seek_slider.sliderPressed.connect(self._on_seek_pressed)
+        
+        # Shuffle button toggle handling
+        self._shuffle_button.toggled.connect(self._on_shuffle_toggled)
+        self._repeat_button.toggled.connect(self._on_repeat_toggled)
 
     def set_track(self, track: Track | None) -> None:
         """Update UI for the current track."""
@@ -246,10 +255,23 @@ class NowPlayingScreen(QWidget):
 
     def seek(self, position_ms: int) -> None:
         """Seek to the position (connected to sliderMoved signal)."""
-        # Position update is handled by the main window via position_ms updates
-        pass
+        # Emit seek requested for main window to handle
+        self.seek_requested.emit(position_ms)
 
     def _on_seek_pressed(self) -> None:
         """Handle user starting to drag the seek slider."""
         # Main window will handle seeking logic when slider is released
+        pass
+    
+    def _on_shuffle_toggled(self, checked: bool) -> None:
+        """Handle shuffle toggle state change."""
+        self.shuffle_toggled.emit(checked)
+    
+    def _on_repeat_toggled(self, checked: bool) -> None:
+        """Handle repeat toggle state change."""
+        self.repeat_toggled.emit(checked)
+
+    def set_volume(self, volume: float) -> None:
+        """Set volume from external source (like main window)."""
+        # This will be implemented when volume control is added
         pass
