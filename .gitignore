@@ -25,3 +25,11 @@ __pycache__/
 .env.*
 *.local
 node_modules/
+
+# Build artifacts and compiled binaries
+build/
+dist/
+*.exe
+*.pkg
+__pycache__/
+*.pyc
