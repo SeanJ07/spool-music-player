@@ -19,3 +19,9 @@ samples/media/**
 *.pyc
 __pycache__/
 *.egg-info/
+
+# Security - prevent secret commits
+.env
+.env.*
+*.local
+node_modules/
