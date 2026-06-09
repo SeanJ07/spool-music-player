@@ -1,8 +1,8 @@
 # Spool
 
-A cross-platform desktop music player built around the feeling of using an iPod — turntable visualization, Cover Flow browsing, the works. Started because I wanted something that actually looked good on a desktop and felt intentional, not just another media player.
+Desktop music player built around the feel of an iPod — turntable visualization, Cover Flow browsing, the works. Made because modern music apps forgot what real objects feel like.
 
-This is Version 0. That means the repo is organized, documented, and ready for real development — not a dumping ground of half-finished ideas. Prior experiments are preserved under `prototypes/`, old docs under `archive/`, and the structure is set up so future work has somewhere clean to land.
+Version 0. Repo is organized and ready for real development. Prior experiments under `prototypes/`, old docs under `archive/`.
 
 **Stack:** Python + HTML (prototypes), targeting cross-platform desktop for v1
 
@@ -31,21 +31,17 @@ spool-music-player/
 
 ### Status
 
-🎵 **WORKING VERSION AVAILABLE!** 
+Working version available. See `QUICK_START.md` to run it.
 
-Spool now has a fully functional desktop music player with GUI. See `QUICK_START.md` to run it immediately.
-
-**Current Features:**
-- Two-screen UI (Library + Now Playing)  
+**Current features:**
+- Two-screen UI (Library + Now Playing)
 - MP3 import via menu or + button
 - Full metadata extraction (art, lyrics, tags)
 - Playback controls with volume slider
 - Spinning vinyl visualization
-- Beautiful gold/dark chrome theme
+- Gold/dark chrome theme
 
-**Next Phase:** Persistence, macOS testing, Cover Flow mode.
-
----
+**Next:** Persistence, macOS testing, Cover Flow mode.
 
 ---
 
